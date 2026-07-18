@@ -1,6 +1,6 @@
 # Contribuer
 
-Merci de contribuer à no-excuse.
+Merci de contribuer à no-excuse. Le projet est un prototype ouvert : retours d’expérience, audits, documentation, tests, corrections et pull requests sont les bienvenus.
 
 1. Ouvrir une issue décrivant le problème ou l’évolution.
 2. Créer une branche courte depuis `main`.

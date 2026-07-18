@@ -2,11 +2,19 @@
 
 English · [Français](README.md)
 
+**Public demo: [try no-excuse on no-excuse.pro](https://no-excuse.pro/) — 20 fictional CVs, no account required.**
+
 Recruitment has become a vicious circle: faced with sometimes fictitious job posts and applications that receive no answer, candidates automate their submissions. Recruiters then receive an ever-growing volume of applications that is difficult to process, creating even more silence.
 
 no-excuse breaks that loop: recruiters save time by screening and prioritising applications, while every candidate receives a clear answer whether selected or not. Relevant profiles are scored against each criterion and presented in a top 10 for a decision that remains human.
 
 Open-source, self-hosted recruitment workflow for accountable candidate processing. Existing job boards, ATSs or career sites send applications to a private ingestion API. no-excuse proposes clearly out-of-scope applications for human confirmation and answers immediately after approval, then analyses relevant profiles. Every application gets an overall score, criterion-by-criterion evidence and an explained summary; the top 10 supports the final human decision and never selects automatically. Offers and application catalogues are never public.
+
+## Project status and contributions
+
+no-excuse is a prototype built in one afternoon, largely with AI assistance, from a problem that affects me directly: I am looking for a new position myself and know the silence that too often follows job applications.
+
+I have other priorities, including finding a job, and do not claim that I can turn this into a perfect solution on my own. The code is published under the MIT licence so that anyone can audit it, improve it or build on it. An appropriate audit remains essential before real-world operation. Feedback, security reviews, discussions and pull requests are welcome; see the [contribution guide](CONTRIBUTING.md).
 
 ## Workflow
 

@@ -13,6 +13,9 @@ onMounted(async () => { about.value = await apiRequest<About>('/about') })
     <h1>À propos & mentions</h1>
     <p>no-excuse aide les équipes RH à traiter chaque candidature et à répondre, tout en laissant la décision finale à un humain.</p>
     <article class="form-card">
+      <h2>Un prototype ouvert</h2>
+      <p>no-excuse est un prototype open source construit en une après-midi, en grande partie avec l’aide de l’IA, à partir d’un problème qui concerne directement son auteur : la recherche d’un nouveau poste et le silence qui suit trop souvent les candidatures.</p>
+      <p>Le projet ne prétend pas être une solution parfaite ni prête à être exploitée sans audit. Le code est publié pour permettre à chacun de l’examiner, de l’améliorer ou de construire dessus. Les retours, audits de sécurité, discussions et pull requests sont les bienvenus.</p>
       <h2>Auteur</h2>
       <p v-if="about">Créé par <strong>{{ about.author_name }}</strong><template v-if="about.author_linkedin_url"> · <a :href="about.author_linkedin_url" target="_blank" rel="noreferrer">Profil LinkedIn</a></template>.</p>
       <h2>Licence</h2>

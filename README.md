@@ -2,6 +2,8 @@
 
 [English](README.en.md) · Français
 
+**Démo publique : [tester no-excuse sur no-excuse.pro](https://no-excuse.pro/) — 20 CV fictifs, aucun compte requis.**
+
 ```mermaid
 sequenceDiagram
     actor C as Candidat
@@ -39,6 +41,12 @@ Le recrutement est devenu un cercle vicieux : face aux annonces parfois fictives
 no-excuse brise cette boucle : les recruteurs gagnent du temps grâce au filtrage et à la priorisation des candidatures, tandis que chaque candidat reçoit une réponse claire, qu’il soit retenu ou non. Les profils pertinents sont scorés par critère et présentés dans un top 10 pour une décision qui reste humaine.
 
 SaaS open source de traitement responsable des candidatures. Une entreprise installe sa propre instance, ses RH partagent les annonces et leur suivi, puis LinkedIn, un ATS ou un site carrière transmet chaque CV à une API d’ingestion dédiée. no-excuse propose les profils hors périmètre à la validation humaine, répond immédiatement après confirmation, puis analyse les profils pertinents. Chaque candidature reçoit un score global, un score par critère et une synthèse justifiée ; le top 10 sert à la décision humaine finale, jamais à une sélection automatique. Les offres et leur catalogue ne sont jamais publics.
+
+## Statut du projet et contributions
+
+no-excuse est un prototype construit en une après-midi, en grande partie avec l’aide de l’IA, à partir d’un problème qui me concerne directement : je cherche moi-même un nouveau poste et je connais le silence qui suit trop souvent les candidatures.
+
+J’ai d’autres priorités, notamment retrouver un emploi, et je ne prétends pas porter seul ce projet jusqu’à en faire une solution parfaite. Le code est publié sous licence MIT pour permettre à chacun de l’auditer, de l’améliorer ou de construire dessus. Un audit adapté reste indispensable avant toute exploitation réelle. Les retours, audits de sécurité, discussions et pull requests sont les bienvenus ; consultez [le guide de contribution](CONTRIBUTING.md).
 
 ## Ce que fait le MVP
 
