@@ -30,7 +30,7 @@ async function joinWaitlist(): Promise<void> {
       <div class="actions">
         <button v-if="demo?.enabled" class="button" :disabled="starting" @click="startDemo">{{ starting ? t('home.demoStarting') : t('home.demoCta') }}</button>
         <RouterLink class="button button-ghost" to="/login">{{ t('home.recruiterCta') }}</RouterLink>
-        <a class="button button-ghost" href="https://github.com/Axxon/no-excuse" target="_blank" rel="noreferrer">{{ t('home.integrationCta') }}</a>
+        <a class="button button-ghost" href="https://github.com/Axxon/no-excuse#démarrage" target="_blank" rel="noreferrer">{{ t('home.installCta') }}</a>
       </div>
       <p v-if="demo?.enabled" class="demo-promise">{{ t('home.demoPromise', { count: demo.candidate_count, hours: demo.lifetime_hours }) }}</p>
       <p v-if="error" class="alert">{{ error }}</p>
@@ -42,6 +42,15 @@ async function joinWaitlist(): Promise<void> {
       <div class="signal-card signal-card-left"><span>10</span><small>top</small></div>
       <div class="signal-card signal-card-right"><span>✓</span><small>réponse</small></div>
       <div class="orbit"></div>
+    </div>
+  </section>
+
+  <section class="access-paths page-section">
+    <div class="section-title"><div><span class="eyebrow">{{ t('home.accessEyebrow') }}</span><h2>{{ t('home.accessTitle') }}</h2></div></div>
+    <div class="access-grid">
+      <article><span>1</span><h3>{{ t('home.accessDemoTitle') }}</h3><p>{{ t('home.accessDemoText') }}</p><button v-if="demo?.enabled" class="text-button" :disabled="starting" @click="startDemo">{{ t('home.demoCta') }} →</button></article>
+      <article><span>2</span><h3>{{ t('home.accessInstallTitle') }}</h3><p>{{ t('home.accessInstallText') }}</p><a class="text-button" href="https://github.com/Axxon/no-excuse#démarrage" target="_blank" rel="noopener noreferrer">{{ t('home.installCta') }} →</a></article>
+      <article><span>3</span><h3>{{ t('home.accessLoginTitle') }}</h3><p>{{ t('home.accessLoginText') }}</p><RouterLink class="text-button" to="/login">{{ t('home.loginCta') }} →</RouterLink></article>
     </div>
   </section>
 

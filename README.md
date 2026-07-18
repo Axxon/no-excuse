@@ -75,6 +75,8 @@ Puis ouvrir :
 
 Au premier accès, l’assistant demande seulement le nom de l’entreprise et le compte responsable. L’écran suivant regroupe les e-mails, les IA, la vélocité, les prompts et l’équipe. Le troisième permet de créer la première annonce.
 
+Sur `no-excuse.pro`, **Tester la démo** crée automatiquement un espace RH temporaire : aucun identifiant n’est demandé. **Connexion RH — instance installée** concerne uniquement les entreprises ayant déployé leur propre instance ; leurs RH utilisent alors l’URL et les comptes internes créés par le responsable.
+
 Pour charger des données de démonstration sur une instance vide :
 
 ```bash
