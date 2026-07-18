@@ -38,15 +38,15 @@ curl -fsS https://demo.example.com/api/demo
 make demo-prod-ps
 ```
 
-La réponse publique doit indiquer `enabled: true`, `active_sessions`, `max_sessions` et `at_capacity`. La page principale affiche le nombre agrégé de sandboxes actuellement servies avec la capacité maximale configurée et ne présente aucun bouton de connexion à une instance d’entreprise. Tant que `at_capacity` vaut `false`, **Lancer la démo** crée immédiatement une sandbox sans demander d’e-mail, affiche 20 candidatures et fait évoluer leurs statuts pendant environ quarante secondes. Sur `/login`, ce lancement direct remplace le formulaire de connexion d’entreprise. La sandbox expose ensuite la configuration détaillée du backoffice en lecture seule ; le backend continue de refuser toute modification. Le formulaire de liste d’attente n’apparaît qu’à saturation.
+La réponse publique doit indiquer `enabled: true`, `active_sessions`, `max_sessions` et `at_capacity`. La page principale affiche le nombre agrégé de sandboxes actuellement servies avec la capacité maximale configurée et ne présente aucun bouton de connexion à une instance d’entreprise. Tant que `at_capacity` vaut `false`, **Lancer la démo** crée immédiatement une sandbox sans demander d’e-mail, affiche 20 candidatures et fait évoluer leurs statuts pendant environ quarante secondes. Un même visiteur ne peut créer qu’une sandbox pendant sa durée de vie et l’action de réinitialisation n’est pas exposée. Sur `/login`, ce lancement direct remplace le formulaire de connexion d’entreprise. La sandbox expose ensuite la configuration détaillée du backoffice en lecture seule ; le backend continue de refuser toute modification. Le formulaire de liste d’attente n’apparaît qu’à saturation.
 
 ## Exploitation
 
 - `make demo-prod-logs` suit les composants utiles sans afficher les CV ;
 - le scheduler exécute `demo:prune` toutes les quinze minutes ;
 - les sandboxes expirent après quatre heures par défaut ;
-- `NO_EXCUSE_DEMO_MAX_SESSIONS` borne les espaces actifs ;
-- la valeur par défaut est `3`; les visiteurs supplémentaires rejoignent volontairement la liste d’attente ;
+- `NO_EXCUSE_DEMO_MAX_SESSIONS` borne les espaces actifs, avec une limite de sécurité absolue fixée à `5` ;
+- la valeur par défaut est `5`; les visiteurs supplémentaires rejoignent volontairement la liste d’attente ;
 - avec `MAIL_MAILER=log`, aucune alerte ne quitte le serveur ; configurez un vrai transport selon le [guide e-mail](email.md) pour activer les alertes de disponibilité ;
 - les réponses aux faux candidats restent consultables avec **Voir l’e-mail candidat** : l’API rend le vrai Mailable de production, uniquement pour l’organisation de démo authentifiée et sans mise en cache ;
 - les volumes PostgreSQL et CV ne sont jamais partagés avec une instance d’entreprise.

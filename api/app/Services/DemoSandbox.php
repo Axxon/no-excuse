@@ -14,6 +14,8 @@ use RuntimeException;
 
 class DemoSandbox
 {
+    private const PUBLIC_SESSION_HARD_LIMIT = 5;
+
     public function __construct(private readonly DemoCvPdf $cvPdf) {}
 
     /** @return array{user: User, offer: JobOffer} */
@@ -36,7 +38,7 @@ class DemoSandbox
 
     public function maxSessions(): int
     {
-        return max(1, (int) config('no-excuse.public_demo.max_sessions'));
+        return min(self::PUBLIC_SESSION_HARD_LIMIT, max(1, (int) config('no-excuse.public_demo.max_sessions')));
     }
 
     /** @return array{user: User, offer: JobOffer} */
@@ -67,17 +69,6 @@ class DemoSandbox
 
             return ['user' => $user, 'offer' => $this->seedOffer($user)];
         });
-    }
-
-    public function reset(Organization $organization): JobOffer
-    {
-        abort_unless($organization->is_demo && $organization->expires_at?->isFuture(), 404);
-        $organization->jobOffers()->each(function (JobOffer $offer): void {
-            Storage::disk('local')->deleteDirectory('cvs/'.$offer->public_id);
-            $offer->delete();
-        });
-
-        return $this->seedOffer($organization->users()->oldest()->firstOrFail());
     }
 
     public function pruneExpired(): int

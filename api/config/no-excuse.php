@@ -4,7 +4,7 @@ return [
     'public_demo' => [
         'enabled' => (bool) env('NO_EXCUSE_PUBLIC_DEMO', false),
         'lifetime_hours' => (int) env('NO_EXCUSE_DEMO_LIFETIME_HOURS', 4),
-        'max_sessions' => (int) env('NO_EXCUSE_DEMO_MAX_SESSIONS', 3),
+        'max_sessions' => (int) env('NO_EXCUSE_DEMO_MAX_SESSIONS', 5),
         'processing_delay_seconds' => (int) env('NO_EXCUSE_DEMO_PROCESSING_DELAY_SECONDS', 2),
         'screening_workers' => (int) env('NO_EXCUSE_DEMO_SCREENING_WORKERS', 2),
         'scoring_workers' => (int) env('NO_EXCUSE_DEMO_SCORING_WORKERS', 1),

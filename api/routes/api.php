@@ -23,7 +23,7 @@ Route::post('/v1/intake/{offer:public_id}/applications', IntegrationIntakeContro
 
 Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function (): void {
     Route::get('/meta/ai-providers', [MetaController::class, 'aiProviders']);
-    Route::post('/demo/reset', [DemoController::class, 'reset'])->middleware('throttle:5,10');
+    Route::post('/demo/reset', [DemoController::class, 'reset']);
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/organization', [OrganizationController::class, 'show']);

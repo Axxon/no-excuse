@@ -12,6 +12,7 @@ use App\Services\CvTextExtractor;
 use App\Services\DemoSandbox;
 use App\Services\FinalizeOffer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -26,14 +27,17 @@ class PublicDemoTest extends TestCase
         parent::setUp();
         config()->set('no-excuse.public_demo.enabled', true);
         config()->set('no-excuse.public_demo.processing_delay_seconds', 0);
+        Cache::flush();
         Storage::fake('local');
         Queue::fake();
     }
 
     public function test_each_demo_visitor_receives_an_isolated_sandbox_with_twenty_fictional_cvs(): void
     {
-        $first = $this->postJson('/api/demo/sessions')->assertCreated()->json();
-        $second = $this->postJson('/api/demo/sessions')->assertCreated()->json();
+        $first = $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.10', 'HTTP_USER_AGENT' => 'demo-visitor-one'])
+            ->postJson('/api/demo/sessions')->assertCreated()->json();
+        $second = $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.11', 'HTTP_USER_AGENT' => 'demo-visitor-two'])
+            ->postJson('/api/demo/sessions')->assertCreated()->json();
 
         $this->assertNotSame($first['user']['organization']['uuid'], $second['user']['organization']['uuid']);
         $this->withToken($first['token'])->getJson('/api/offers')
@@ -53,7 +57,7 @@ class PublicDemoTest extends TestCase
                 'enabled' => true,
                 'candidate_count' => 20,
                 'active_sessions' => 2,
-                'max_sessions' => 3,
+                'max_sessions' => 5,
                 'at_capacity' => false,
             ]);
 
@@ -63,6 +67,30 @@ class PublicDemoTest extends TestCase
         $firstPdf = Storage::disk('local')->get($applications->firstOrFail()->cv_path);
         $this->assertStringStartsWith('%PDF-', $firstPdf);
         $this->assertGreaterThan(3000, strlen($firstPdf));
+    }
+
+    public function test_one_visitor_cannot_create_or_reset_a_second_sandbox(): void
+    {
+        $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.20', 'HTTP_USER_AGENT' => 'single-demo-visitor']);
+        $first = $this->postJson('/api/demo/sessions')->assertCreated()->json();
+
+        $this->postJson('/api/demo/sessions')
+            ->assertTooManyRequests()
+            ->assertJsonFragment(['message' => 'Une seule sandbox est disponible par visiteur pendant la durée de la démonstration.']);
+        $this->withToken($first['token'])->postJson('/api/demo/reset')
+            ->assertTooManyRequests()
+            ->assertJsonFragment(['message' => 'Cette sandbox a déjà été créée. Une seule sandbox est autorisée par visiteur.']);
+        $this->assertDatabaseCount('organizations', 1);
+        $this->assertDatabaseCount('applications', 20);
+    }
+
+    public function test_public_demo_capacity_is_hard_capped_at_five(): void
+    {
+        config()->set('no-excuse.public_demo.max_sessions', 100);
+
+        $this->getJson('/api/demo')
+            ->assertOk()
+            ->assertJson(['max_sessions' => 5]);
     }
 
     public function test_demo_runs_the_real_pipeline_without_sending_email_or_accepting_external_cvs(): void
@@ -114,14 +142,13 @@ class PublicDemoTest extends TestCase
         $this->assertTrue($user->organization->is_demo);
     }
 
-    public function test_demo_can_be_reset_and_expired_data_is_completely_pruned(): void
+    public function test_demo_cannot_be_reset_and_expired_data_is_completely_pruned(): void
     {
         ['user' => $user, 'offer' => $offer] = app(DemoSandbox::class)->create();
         $oldOfferUuid = $offer->public_id;
         $token = $user->createToken('test-demo')->plainTextToken;
 
-        $reset = $this->withToken($token)->postJson('/api/demo/reset')->assertOk()->json();
-        $this->assertNotSame($oldOfferUuid, $reset['offer_uuid']);
+        $this->withToken($token)->postJson('/api/demo/reset')->assertTooManyRequests();
         $this->assertDatabaseCount('applications', 20);
 
         $organization = $user->organization;
@@ -132,7 +159,7 @@ class PublicDemoTest extends TestCase
         $this->assertDatabaseMissing('users', ['id' => $user->id]);
         $this->assertDatabaseMissing('personal_access_tokens', ['tokenable_id' => $user->id]);
         $this->assertDatabaseCount('applications', 0);
-        Storage::disk('local')->assertMissing('cvs/'.$reset['offer_uuid']);
+        Storage::disk('local')->assertMissing('cvs/'.$oldOfferUuid);
         auth()->forgetGuards();
         $this->withToken($token)->getJson('/api/auth/me')->assertUnauthorized();
     }
