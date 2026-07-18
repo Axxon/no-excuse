@@ -47,3 +47,20 @@ La réponse publique doit indiquer `enabled: true`. Depuis la page principale, *
 - les volumes PostgreSQL et CV ne sont jamais partagés avec une instance d’entreprise.
 
 Pour une mise à jour, récupérez le nouveau commit privé puis relancez `make demo-prod-deploy`. Ne supprimez pas les volumes pendant une mise à jour ordinaire.
+
+## Déploiement distant depuis une archive privée
+
+`compose.remote.yml` est indépendant du fournisseur d'hébergement. Il fonctionne
+avec tout moteur Docker Compose capable de construire depuis une archive HTTP.
+Le contexte `SOURCE_ARCHIVE_URL` peut être une URL GitHub signée et éphémère :
+le dépôt reste privé et aucun jeton GitHub n'est enregistré sur le serveur. Les
+Dockerfiles sous `deploy/remote/` construisent l'API et le front depuis la racine
+de cette archive.
+
+Le service `migrate` termine les migrations avant le démarrage de l'API et des
+workers. Le front reste publié uniquement sur `127.0.0.1:8088`; le reverse proxy
+de l'hôte termine TLS pour `no-excuse.pro`.
+
+Sur Hostinger, ce même fichier peut être fourni au Docker Manager. Sur un autre
+VPS, il peut être utilisé directement avec Docker Compose, sans adaptation du
+code applicatif.

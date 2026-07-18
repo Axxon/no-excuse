@@ -1,0 +1,12 @@
+.git
+.github
+.env
+.env.*
+api/.env
+api/.env.*
+api/bootstrap/cache/*.php
+api/storage/app/private/*
+api/storage/logs/*
+api/vendor
+web/node_modules
+web/dist
