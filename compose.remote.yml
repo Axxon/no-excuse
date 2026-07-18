@@ -1,7 +1,6 @@
 x-api: &api
-  build:
-    context: ${SOURCE_ARCHIVE_URL:-.}
-    dockerfile: deploy/remote/api.Dockerfile
+  image: ${NO_EXCUSE_API_IMAGE:-no-excuse-api:local}
+  pull_policy: never
   restart: unless-stopped
   environment:
     APP_NAME: no-excuse-demo
@@ -39,6 +38,7 @@ x-api: &api
 
 services:
   migrate:
+    image: ${NO_EXCUSE_API_IMAGE:-no-excuse-api:local}
     build:
       context: ${SOURCE_ARCHIVE_URL:-.}
       dockerfile: deploy/remote/api.Dockerfile
@@ -93,6 +93,7 @@ services:
     command: php artisan schedule:work
 
   web:
+    image: ${NO_EXCUSE_WEB_IMAGE:-no-excuse-web:local}
     build:
       context: ${SOURCE_ARCHIVE_URL:-.}
       dockerfile: deploy/remote/web.Dockerfile
