@@ -31,6 +31,7 @@ async function joinWaitlist(): Promise<void> {
     <div class="hero-copy">
       <span class="eyebrow">{{ t('home.eyebrow') }}</span>
       <h1>{{ t('home.title') }}</h1>
+      <p>{{ t('home.problem') }}</p>
       <p class="hero-lead">{{ t('home.lead') }}</p>
       <div class="actions">
         <button v-if="demo?.enabled" class="button" :disabled="starting || (demo.at_capacity && !accessToken)" @click="startDemo">{{ starting ? t('home.demoStarting') : (demo.at_capacity && !accessToken ? t('home.demoFull') : t('home.demoCta')) }}</button>

@@ -34,6 +34,10 @@ sequenceDiagram
     API-->>C: Décision, score et retour RH optionnel
 ```
 
+Le recrutement est devenu un cercle vicieux : face aux annonces parfois fictives et aux candidatures qui restent sans réponse, les candidats automatisent leurs envois. Les recruteurs reçoivent alors toujours plus de candidatures difficiles à traiter, ce qui produit encore davantage de silence.
+
+no-excuse brise cette boucle : les recruteurs gagnent du temps grâce au filtrage et à la priorisation des candidatures, tandis que chaque candidat reçoit une réponse claire, qu’il soit retenu ou non. Les profils pertinents sont scorés par critère et présentés dans un top 10 pour une décision qui reste humaine.
+
 SaaS open source de traitement responsable des candidatures. Une entreprise installe sa propre instance, ses RH partagent les annonces et leur suivi, puis LinkedIn, un ATS ou un site carrière transmet chaque CV à une API d’ingestion dédiée. no-excuse propose les profils hors périmètre à la validation humaine, répond immédiatement après confirmation, puis analyse les profils pertinents. Chaque candidature reçoit un score global, un score par critère et une synthèse justifiée ; le top 10 sert à la décision humaine finale, jamais à une sélection automatique. Les offres et leur catalogue ne sont jamais publics.
 
 ## Ce que fait le MVP

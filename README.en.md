@@ -2,6 +2,10 @@
 
 English · [Français](README.md)
 
+Recruitment has become a vicious circle: faced with sometimes fictitious job posts and applications that receive no answer, candidates automate their submissions. Recruiters then receive an ever-growing volume of applications that is difficult to process, creating even more silence.
+
+no-excuse breaks that loop: recruiters save time by screening and prioritising applications, while every candidate receives a clear answer whether selected or not. Relevant profiles are scored against each criterion and presented in a top 10 for a decision that remains human.
+
 Open-source, self-hosted recruitment workflow for accountable candidate processing. Existing job boards, ATSs or career sites send applications to a private ingestion API. no-excuse proposes clearly out-of-scope applications for human confirmation and answers immediately after approval, then analyses relevant profiles. Every application gets an overall score, criterion-by-criterion evidence and an explained summary; the top 10 supports the final human decision and never selects automatically. Offers and application catalogues are never public.
 
 ## Workflow
