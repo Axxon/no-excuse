@@ -75,7 +75,7 @@ Puis ouvrir :
 
 Au premier accès, l’assistant demande seulement le nom de l’entreprise et le compte responsable. L’écran suivant regroupe les e-mails, les IA, la vélocité, les prompts et l’équipe. Le troisième permet de créer la première annonce.
 
-Sur `no-excuse.pro`, **Tester la démo** crée automatiquement un espace RH temporaire : aucun identifiant n’est demandé. **Connexion RH — instance installée** concerne uniquement les entreprises ayant déployé leur propre instance ; leurs RH utilisent alors l’URL et les comptes internes créés par le responsable.
+Sur `no-excuse.pro`, **Tester la démo** crée automatiquement un espace RH temporaire : aucun identifiant n’est demandé. La sandbox donne aussi accès à la configuration détaillée du backoffice en lecture seule ; les réglages et la gestion d’équipe restent verrouillés. Le formulaire de connexion est réservé aux installations d’entreprise et n’est pas présenté comme parcours principal sur le domaine public.
 
 Pour charger des données de démonstration sur une instance vide :
 

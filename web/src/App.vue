@@ -23,11 +23,11 @@ async function resetDemo(): Promise<void> {
       </RouterLink>
       <nav class="main-nav" :aria-label="t('nav.main')">
         <RouterLink v-if="auth.isAuthenticated" to="/dashboard">{{ t('nav.dashboard') }}</RouterLink>
-        <RouterLink v-if="auth.isAuthenticated && !auth.user?.organization?.is_demo" to="/settings">{{ t('nav.settings') }}</RouterLink>
-        <RouterLink v-else class="button button-small button-ghost" to="/login">{{ t('nav.recruiter') }}</RouterLink>
+        <RouterLink v-if="auth.isAuthenticated" to="/settings">{{ t('nav.settings') }}</RouterLink>
+        <RouterLink v-if="!auth.isAuthenticated" class="button button-small button-ghost" to="/login">{{ t('nav.recruiter') }}</RouterLink>
       </nav>
     </header>
-    <aside v-if="auth.user?.organization?.is_demo" class="demo-banner"><div><strong>{{ t('demo.banner') }}</strong><span>{{ t('demo.bannerLead') }}</span></div><button class="button button-small button-ghost" @click="resetDemo">{{ t('demo.reset') }}</button></aside>
+    <aside v-if="auth.user?.organization?.is_demo" class="demo-banner"><div><strong>{{ t('demo.banner') }}</strong><span>{{ t('demo.bannerLead') }}</span></div><div class="actions"><RouterLink class="button button-small button-ghost" to="/settings">{{ t('demo.viewSettings') }}</RouterLink><button class="button button-small button-ghost" @click="resetDemo">{{ t('demo.reset') }}</button></div></aside>
     <main>
       <RouterView />
     </main>

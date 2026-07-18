@@ -30,7 +30,7 @@ make setup
 
 Open `http://localhost:5173` for the interface and `http://localhost:18080/api` for the API. Run the complete Docker validation rail with `make validate`.
 
-On `no-excuse.pro`, **Try the demo** automatically creates a temporary recruiter workspace with no credentials. **Recruiter login — installed instance** is only for companies that deployed their own instance; recruiters then use the company URL and accounts created by its owner.
+On `no-excuse.pro`, **Try the demo** automatically creates a temporary recruiter workspace with no credentials. The sandbox also exposes the detailed backoffice configuration in read-only mode; settings and team management remain locked. The login form is reserved for company installations and is not presented as the main path on the public domain.
 
 ## Integrations and operations
 
