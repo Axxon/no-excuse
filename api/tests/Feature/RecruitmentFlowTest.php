@@ -192,6 +192,46 @@ class RecruitmentFlowTest extends TestCase
         $this->assertSame('Profil solide et pertinent.', $application->ai_summary);
     }
 
+    public function test_out_of_scope_screening_immediately_queues_an_explained_candidate_email(): void
+    {
+        Queue::fake();
+        Storage::fake('local');
+        $application = $this->application();
+        Storage::disk('local')->put($application->cv_path, app(DemoCvPdf::class)->render($this->candidateData(), 0));
+        $reason = 'Les expériences présentées ne couvrent pas les compétences Laravel et Vue demandées.';
+        $this->app->bind(CandidateAnalyzer::class, fn () => new class($reason) implements CandidateAnalyzer
+        {
+            public function __construct(private readonly string $reason) {}
+
+            public function screen(JobOffer $offer, string $cvText): ScreeningResult
+            {
+                return new ScreeningResult(false, 24.0, $this->reason);
+            }
+
+            public function score(JobOffer $offer, string $cvText): ScoringResult
+            {
+                throw new \LogicException('Une candidature hors périmètre ne doit pas être scorée.');
+            }
+        });
+
+        (new ScreenApplication($application->id))->handle(app(CandidateAnalyzer::class), app(CvTextExtractor::class));
+
+        $application->refresh();
+        $this->assertSame('rejected_out_of_scope', $application->status);
+        $this->assertSame($reason, $application->scope_reason);
+        Queue::assertPushed(SendCandidateDecision::class, fn (SendCandidateDecision $job): bool => $job->applicationId === $application->id && $job->queue === 'notifications');
+        $this->assertDatabaseHas('application_events', ['application_id' => $application->id, 'type' => 'candidate_notification_queued']);
+
+        Sanctum::actingAs($application->offer->recruiter);
+        $this->getJson('/api/offers/'.$application->offer->public_id.'/applications')
+            ->assertOk()
+            ->assertJsonFragment([
+                'uuid' => $application->public_id,
+                'scope_reason' => $reason,
+                'notification_status' => 'pending',
+            ]);
+    }
+
     public function test_offer_closure_builds_a_top_ten_and_recruiter_selects_a_candidate(): void
     {
         Queue::fake();
