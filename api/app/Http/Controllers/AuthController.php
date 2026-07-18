@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\DemoSandbox;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -27,9 +28,14 @@ class AuthController extends Controller
         return response()->json(['user' => self::userPayload($user)]);
     }
 
-    public function logout(Request $request): JsonResponse
+    public function logout(Request $request, DemoSandbox $sandbox): JsonResponse
     {
-        $request->user()->currentAccessToken()?->delete();
+        $user = $request->user();
+        if ($user->organization?->is_demo) {
+            $sandbox->destroy($user->organization);
+        } else {
+            $user->currentAccessToken()?->delete();
+        }
 
         return response()->json([], 204);
     }

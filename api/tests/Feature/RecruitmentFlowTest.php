@@ -285,6 +285,18 @@ class RecruitmentFlowTest extends TestCase
         ]);
     }
 
+    public function test_company_logout_revokes_only_the_current_access_token(): void
+    {
+        $user = User::factory()->create();
+        $token = $user->createToken('company-session')->plainTextToken;
+
+        $this->withToken($token)->postJson('/api/auth/logout')->assertNoContent();
+
+        $this->assertDatabaseHas('users', ['id' => $user->id]);
+        $this->assertDatabaseHas('organizations', ['id' => $user->organization_id]);
+        $this->assertDatabaseMissing('personal_access_tokens', ['tokenable_id' => $user->id]);
+    }
+
     private function offer(?User $user = null): JobOffer
     {
         $user ??= User::factory()->create();

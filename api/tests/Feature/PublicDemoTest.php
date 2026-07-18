@@ -93,6 +93,22 @@ class PublicDemoTest extends TestCase
             ->assertJson(['max_sessions' => 5]);
     }
 
+    public function test_demo_logout_immediately_destroys_the_sandbox_and_releases_capacity(): void
+    {
+        ['user' => $user, 'offer' => $offer] = app(DemoSandbox::class)->create();
+        $organization = $user->organization;
+        $token = $user->createToken('release-demo')->plainTextToken;
+
+        $this->withToken($token)->postJson('/api/auth/logout')->assertNoContent();
+
+        $this->assertDatabaseMissing('organizations', ['id' => $organization->id]);
+        $this->assertDatabaseMissing('users', ['id' => $user->id]);
+        $this->assertDatabaseMissing('personal_access_tokens', ['tokenable_id' => $user->id]);
+        $this->assertDatabaseCount('applications', 0);
+        Storage::disk('local')->assertMissing('cvs/'.$offer->public_id);
+        $this->getJson('/api/demo')->assertOk()->assertJson(['active_sessions' => 0]);
+    }
+
     public function test_demo_runs_the_real_pipeline_without_sending_email_or_accepting_external_cvs(): void
     {
         ['user' => $user, 'offer' => $offer] = app(DemoSandbox::class)->create();

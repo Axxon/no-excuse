@@ -1,14 +1,24 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { apiRequest, type DemoStatus } from './api'
 import { useAuthStore } from './stores/auth'
 
 const { t } = useI18n()
 const auth = useAuthStore()
+const router = useRouter()
 const publicDemo = ref(false)
+const releasingDemo = ref(false)
 onMounted(async () => { try { publicDemo.value = (await apiRequest<DemoStatus>('/demo')).enabled } catch { publicDemo.value = false } })
+async function releaseSandbox(): Promise<void> {
+  if (!window.confirm(t('demo.releaseConfirm'))) return
+  releasingDemo.value = true
+  try { await auth.releaseDemo(); await router.push('/') }
+  catch { window.alert(t('demo.releaseError')) }
+  finally { releasingDemo.value = false }
+}
 </script>
 
 <template>
@@ -27,7 +37,7 @@ onMounted(async () => { try { publicDemo.value = (await apiRequest<DemoStatus>('
         </a>
       </nav>
     </header>
-    <aside v-if="auth.user?.organization?.is_demo" class="demo-banner"><div><strong>{{ t('demo.banner') }}</strong><span>{{ t('demo.bannerLead') }}</span></div><div class="actions"><RouterLink class="button button-small button-ghost" to="/settings">{{ t('demo.viewSettings') }}</RouterLink></div></aside>
+    <aside v-if="auth.user?.organization?.is_demo" class="demo-banner"><div><strong>{{ t('demo.banner') }}</strong><span>{{ t('demo.releaseLead') }}</span></div><div class="actions"><RouterLink class="button button-small button-ghost" to="/settings">{{ t('demo.viewSettings') }}</RouterLink><button class="button button-small demo-release-button" :disabled="releasingDemo" @click="releaseSandbox">{{ releasingDemo ? t('demo.releasing') : t('demo.release') }}</button></div></aside>
     <main>
       <RouterView />
     </main>

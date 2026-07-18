@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { apiRequest, type AiMeta, type Offer } from '../api'
 import { useAuthStore } from '../stores/auth'
 
-const { t } = useI18n(); const auth = useAuthStore()
+const { t } = useI18n(); const auth = useAuthStore(); const router = useRouter()
 const offers = ref<Offer[]>([]); const providers = ref<AiMeta['providers']>([]); const showForm = ref(false); const error = ref(''); const saving = ref(false)
 const integration = ref<{ intakeUrl: string; key: string } | null>(null)
 const form = reactive({
@@ -36,12 +37,21 @@ async function createOffer(): Promise<void> {
   } catch (caught) { error.value = caught instanceof Error ? caught.message : t('common.error') }
   finally { saving.value = false }
 }
+async function logout(): Promise<void> {
+  try {
+    if (auth.user?.organization?.is_demo) {
+      if (!window.confirm(t('demo.releaseConfirm'))) return
+      await auth.releaseDemo()
+    } else await auth.logout()
+    await router.push('/')
+  } catch { window.alert(t('demo.releaseError')) }
+}
 </script>
 
 <template>
   <section class="dashboard-header page-section">
     <div><span class="eyebrow">{{ t('dashboard.welcome', { name: auth.user?.name ?? '' }) }}</span><h1>{{ t('dashboard.title') }}</h1><p class="lead">{{ t('dashboard.lead') }}</p></div>
-    <div class="actions"><button v-if="!auth.user?.organization?.is_demo" class="button" @click="showForm = !showForm">+ {{ t('dashboard.newOffer') }}</button><button class="text-button" @click="auth.logout()">{{ t('nav.logout') }}</button></div>
+    <div class="actions"><button v-if="!auth.user?.organization?.is_demo" class="button" @click="showForm = !showForm">+ {{ t('dashboard.newOffer') }}</button><button class="text-button" @click="logout">{{ auth.user?.organization?.is_demo ? t('demo.release') : t('nav.logout') }}</button></div>
   </section>
 
   <section v-if="showForm" class="page-section creation-panel">

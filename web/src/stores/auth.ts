@@ -35,15 +35,24 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = payload.user
   }
 
+  function clearSession(): void {
+    token.value = ''
+    user.value = null
+    localStorage.removeItem('no-excuse-token')
+  }
+
   async function logout(): Promise<void> {
     try {
       if (token.value) await apiRequest('/auth/logout', { method: 'POST' }, token.value)
     } finally {
-      token.value = ''
-      user.value = null
-      localStorage.removeItem('no-excuse-token')
+      clearSession()
     }
   }
 
-  return { token, user, isAuthenticated, login, setup, startDemo, loadUser, logout }
+  async function releaseDemo(): Promise<void> {
+    if (token.value) await apiRequest('/auth/logout', { method: 'POST' }, token.value)
+    clearSession()
+  }
+
+  return { token, user, isAuthenticated, login, setup, startDemo, loadUser, logout, releaseDemo }
 })
