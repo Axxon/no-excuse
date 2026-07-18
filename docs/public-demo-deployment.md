@@ -63,6 +63,6 @@ Le service `migrate` termine les migrations avant le démarrage de l'API et des
 workers. Le front reste publié uniquement sur `127.0.0.1:8088`; le reverse proxy
 de l'hôte termine TLS pour `no-excuse.pro`.
 
-Sur Hostinger, ce même fichier peut être fourni au Docker Manager. Sur un autre
-VPS, il peut être utilisé directement avec Docker Compose, sans adaptation du
-code applicatif.
+Le même fichier peut être fourni à un panneau Docker managé ou utilisé
+directement avec Docker Compose sur un VPS, sans adaptation du code
+applicatif.
