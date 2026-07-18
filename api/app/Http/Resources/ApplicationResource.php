@@ -30,6 +30,7 @@ class ApplicationResource extends JsonResource
             'read_at' => $this->read_at?->toIso8601String(),
             'selected_at' => $this->selected_at?->toIso8601String(),
             'notified_at' => $this->notified_at?->toIso8601String(),
+            'notification_status' => $this->notificationStatus(),
             'created_at' => $this->created_at?->toIso8601String(),
             'annotations' => $this->whenLoaded('annotations', fn () => $this->annotations->map(fn ($annotation) => [
                 'uuid' => $annotation->public_id,
@@ -37,5 +38,17 @@ class ApplicationResource extends JsonResource
                 'created_at' => $annotation->created_at?->toIso8601String(),
             ])),
         ];
+    }
+
+    private function notificationStatus(): ?string
+    {
+        if (! in_array($this->status, ['rejected_out_of_scope', 'rejected_final', 'selected'], true)) {
+            return null;
+        }
+        if (! $this->notified_at) {
+            return 'pending';
+        }
+
+        return $this->offer?->organization?->is_demo ? 'previewed' : 'sent';
     }
 }

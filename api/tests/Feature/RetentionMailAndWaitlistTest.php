@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\SendCandidateDecision;
+use App\Mail\CandidateDecisionMail;
 use App\Mail\DemoSlotAvailableMail;
 use App\Mail\MailConfigurationTest;
 use App\Models\User;
@@ -50,6 +52,35 @@ class RetentionMailAndWaitlistTest extends TestCase
         $this->assertDatabaseHas('application_events', ['application_id' => $application->id, 'type' => 'cv_deleted_by_retention']);
         $token = $user->createToken('no-preview-outside-demo')->plainTextToken;
         $this->withToken($token)->get('/api/applications/'.$application->public_id.'/decision-preview')->assertNotFound();
+    }
+
+    public function test_out_of_scope_notification_moves_from_pending_to_sent_and_contains_the_ai_reason(): void
+    {
+        Mail::fake();
+        $user = User::factory()->create();
+        $offer = $user->jobOffers()->create([
+            'title' => 'Développeur Laravel', 'company' => 'Acme', 'description' => 'Poste test', 'criteria' => ['PHP'],
+            'rejection_message' => 'Merci pour votre candidature.', 'final_rejection_message' => 'Non retenu',
+            'ingestion_key_hash' => hash('sha256', 'key'), 'status' => 'open',
+        ]);
+        $application = $offer->applications()->create([
+            'candidate_name' => 'Test Candidate', 'candidate_email' => 'candidate@example.test',
+            'cv_path' => 'cvs/test/rejected.pdf', 'cv_original_name' => 'cv.pdf', 'status' => 'rejected_out_of_scope',
+            'scope_reason' => 'Le CV ne démontre pas une expérience PHP attendue pour ce poste.',
+            'status_token_hash' => hash('sha256', 'token'),
+        ]);
+        $token = $user->createToken('notification-status')->plainTextToken;
+
+        $this->withToken($token)->getJson('/api/offers/'.$offer->public_id.'/applications')
+            ->assertOk()
+            ->assertJsonFragment(['uuid' => $application->public_id, 'notification_status' => 'pending']);
+
+        (new SendCandidateDecision($application->id))->handle(app(ApplicationRetention::class));
+
+        Mail::assertSent(CandidateDecisionMail::class, fn (CandidateDecisionMail $mail): bool => str_contains($mail->render(), $application->scope_reason));
+        $this->withToken($token)->getJson('/api/offers/'.$offer->public_id.'/applications')
+            ->assertOk()
+            ->assertJsonFragment(['uuid' => $application->public_id, 'notification_status' => 'sent']);
     }
 
     public function test_waitlist_is_used_when_demo_capacity_is_full_and_notifies_after_expiry(): void

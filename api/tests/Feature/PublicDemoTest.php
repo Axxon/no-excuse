@@ -6,6 +6,7 @@ use App\Contracts\CandidateAnalyzer;
 use App\Jobs\ScoreApplication;
 use App\Jobs\ScreenApplication;
 use App\Jobs\SendCandidateDecision;
+use App\Models\Application;
 use App\Services\ApplicationRetention;
 use App\Services\CvTextExtractor;
 use App\Services\DemoSandbox;
@@ -45,6 +46,13 @@ class PublicDemoTest extends TestCase
         $this->postJson('/api/setup', [])->assertForbidden();
         $this->assertDatabaseCount('applications', 40);
         Queue::assertPushed(ScreenApplication::class, 40);
+
+        $applications = Application::query()->get();
+        $this->assertTrue($applications->every(fn ($application): bool => str_ends_with($application->cv_path, '.pdf')));
+        $this->assertTrue($applications->every(fn ($application): bool => str_ends_with($application->cv_original_name, '.pdf')));
+        $firstPdf = Storage::disk('local')->get($applications->firstOrFail()->cv_path);
+        $this->assertStringStartsWith('%PDF-', $firstPdf);
+        $this->assertGreaterThan(3000, strlen($firstPdf));
     }
 
     public function test_demo_runs_the_real_pipeline_without_sending_email_or_accepting_external_cvs(): void
@@ -59,14 +67,24 @@ class PublicDemoTest extends TestCase
         $this->assertGreaterThanOrEqual(10, $offer->applications()->where('status', 'qualified')->count());
         $this->assertGreaterThan(0, $offer->applications()->where('status', 'rejected_out_of_scope')->count());
         $rejected = $offer->applications()->where('status', 'rejected_out_of_scope')->firstOrFail();
-        (new SendCandidateDecision($rejected->id))->handle(app(ApplicationRetention::class));
         $demoToken = $user->createToken('mail-preview')->plainTextToken;
+        $this->withToken($demoToken)
+            ->getJson('/api/offers/'.$offer->public_id.'/applications')
+            ->assertOk()
+            ->assertJsonFragment(['uuid' => $rejected->public_id, 'notification_status' => 'pending']);
+
+        (new SendCandidateDecision($rejected->id))->handle(app(ApplicationRetention::class));
+        $this->withToken($demoToken)
+            ->getJson('/api/offers/'.$offer->public_id.'/applications')
+            ->assertOk()
+            ->assertJsonFragment(['uuid' => $rejected->public_id, 'notification_status' => 'previewed']);
         $this->withToken($demoToken)
             ->get('/api/applications/'.$rejected->public_id.'/decision-preview')
             ->assertOk()
             ->assertHeader('Cache-Control', 'no-store, private')
             ->assertSee('Bonjour '.$rejected->candidate_name, false)
-            ->assertSee($offer->rejection_message, false);
+            ->assertSee($offer->rejection_message, false)
+            ->assertSee($rejected->scope_reason, false);
 
         $offer->applications()->where('status', 'qualified')->pluck('id')->each(
             fn (int $id) => (new ScoreApplication($id))->handle($analyzer, $extractor),

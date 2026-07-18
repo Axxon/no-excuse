@@ -18,7 +18,7 @@ class ApplicationController extends Controller
     public function index(Request $request, JobOffer $offer): AnonymousResourceCollection
     {
         $this->authorizeOffer($request, $offer);
-        $applications = $offer->applications()->with('annotations')
+        $applications = $offer->applications()->with(['annotations', 'offer.organization'])
             ->orderByRaw('recruiter_rank is null')
             ->orderBy('recruiter_rank')
             ->orderByDesc('final_score')
@@ -106,6 +106,9 @@ class ApplicationController extends Controller
                 ->get();
             $rejected->each(fn ($candidate) => $candidate->update(['status' => 'rejected_final']));
             $offer->update(['status' => 'selection_made']);
+
+            $application->events()->create(['type' => 'candidate_notification_queued', 'metadata' => ['status' => 'selected']]);
+            $rejected->each(fn ($candidate) => $candidate->events()->create(['type' => 'candidate_notification_queued', 'metadata' => ['status' => 'rejected_final']]));
 
             return [$application->id, ...$rejected->modelKeys()];
         });

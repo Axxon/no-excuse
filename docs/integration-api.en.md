@@ -20,9 +20,9 @@ curl --request POST 'https://no-excuse.example/api/v1/intake/OFFER_UUID/applicat
   --form 'cv=@/path/to/cv.pdf;type=application/pdf'
 ```
 
-Required fields are `source` (max 80), `external_reference` (max 190), `candidate_name` (max 160), a valid `candidate_email`, and a PDF/TXT `cv` up to 10 MiB. `cover_letter` is optional (max 10,000 characters).
+Required fields are `source` (max 80), `external_reference` (max 190), `candidate_name` (max 160), a valid `candidate_email`, and a PDF-only `cv` (`application/pdf`) up to 10 MiB. `cover_letter` is optional (max 10,000 characters).
 
-HTTP 202 returns `application_reference`, `status: accepted`, and `duplicate: false`. The pair `source + external_reference` is idempotent within an offer; a duplicate returns HTTP 200 without creating another application.
+HTTP 202 returns `application_reference`, `status: accepted`, and `duplicate: false`. The pair `source + external_reference` is idempotent within an offer; a duplicate returns HTTP 200 without creating another application. Once initial screening marks an application out of scope, a factual AI explanation is immediately queued for e-mail. The recruiter card shows `E-mail pending`, then `E-mail sent` once the SMTP provider accepts it.
 
 Connectors should retain the returned reference and retry only network/5xx failures with exponential backoff. Store the key in a secret manager, transmit it only over HTTPS, never log keys or application contents, and use one key per campaign. `404` means unknown URL/key, `409` a closed campaign, `422` invalid input and `429` rate limiting.
 

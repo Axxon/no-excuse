@@ -14,6 +14,8 @@ use RuntimeException;
 
 class DemoSandbox
 {
+    public function __construct(private readonly DemoCvPdf $cvPdf) {}
+
     /** @return array{user: User, offer: JobOffer} */
     public function create(): array
     {
@@ -127,15 +129,15 @@ class DemoSandbox
 
         $applicationIds = [];
         foreach ($this->candidates() as $index => $candidate) {
-            $path = 'cvs/'.$offer->public_id.'/cv-'.str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT).'.txt';
-            Storage::disk('local')->put($path, $this->cvText($candidate));
+            $path = 'cvs/'.$offer->public_id.'/cv-'.str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT).'.pdf';
+            Storage::disk('local')->put($path, $this->cvPdf->render($candidate, $index));
             $application = $offer->applications()->create([
                 'candidate_name' => $candidate['name'],
                 'candidate_email' => 'candidat-'.($index + 1).'@example.test',
                 'source' => ['linkedin', 'ats-partenaire', 'site-carriere'][$index % 3],
                 'external_reference' => 'demo-'.$offer->public_id.'-'.($index + 1),
                 'cv_path' => $path,
-                'cv_original_name' => 'CV '.$candidate['name'].'.txt',
+                'cv_original_name' => 'CV '.$candidate['name'].'.pdf',
                 'cover_letter' => 'Candidature entièrement fictive créée pour découvrir no-excuse.',
                 'status' => 'received',
                 'status_token_hash' => hash('sha256', Str::random(64)),
@@ -159,18 +161,5 @@ class DemoSandbox
     private function candidates(): array
     {
         return require resource_path('demo/candidates.php');
-    }
-
-    /** @param array{name: string, role: string, years: string, skills: string, summary: string} $candidate */
-    private function cvText(array $candidate): string
-    {
-        return implode("\n\n", [
-            'CV FICTIF — DÉMONSTRATION NO-EXCUSE',
-            $candidate['name'].' — '.$candidate['role'],
-            'EXPÉRIENCES : '.$candidate['years'],
-            'COMPÉTENCES : '.$candidate['skills'],
-            'SYNTHÈSE : '.$candidate['summary'],
-            'Ce document ne correspond à aucune personne réelle.',
-        ]);
     }
 }

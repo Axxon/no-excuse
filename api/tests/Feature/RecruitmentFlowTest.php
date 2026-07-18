@@ -12,6 +12,7 @@ use App\Models\Application;
 use App\Models\JobOffer;
 use App\Models\User;
 use App\Services\CvTextExtractor;
+use App\Services\DemoCvPdf;
 use App\Services\FinalizeOffer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -131,11 +132,11 @@ class RecruitmentFlowTest extends TestCase
             'candidate_name' => 'Bob Candidat',
             'candidate_email' => 'bob@example.test',
             'cover_letter' => 'Je souhaite rejoindre votre équipe.',
-            'cv' => UploadedFile::fake()->createWithContent('cv.txt', 'Laravel Vue TypeScript PostgreSQL Redis tests automatisés 2022 2025'),
+            'cv' => $this->uploadedCv(),
         ];
         $this->withToken('wrong-key')->post('/api/v1/intake/'.$offer->public_id.'/applications', $payload)->assertNotFound();
 
-        $payload['cv'] = UploadedFile::fake()->createWithContent('cv.txt', 'Laravel Vue TypeScript PostgreSQL Redis tests automatisés 2022 2025');
+        $payload['cv'] = $this->uploadedCv();
         $response = $this->withToken('test-ingestion-key')
             ->post('/api/v1/intake/'.$offer->public_id.'/applications', $payload)
             ->assertAccepted()
@@ -146,12 +147,19 @@ class RecruitmentFlowTest extends TestCase
         Storage::disk('local')->assertExists($application->cv_path);
         Queue::assertPushed(ScreenApplication::class, fn ($job) => $job->applicationId === $application->id);
 
-        $payload['cv'] = UploadedFile::fake()->createWithContent('cv.txt', 'same candidate retry');
+        $payload['cv'] = $this->uploadedCv();
         $this->withToken('test-ingestion-key')
             ->post('/api/v1/intake/'.$offer->public_id.'/applications', $payload)
             ->assertOk()
             ->assertJsonPath('duplicate', true)
             ->assertJsonPath('application_reference', $application->public_id);
+
+        $payload['external_reference'] = 'linkedin-invalid-text-cv';
+        $payload['cv'] = UploadedFile::fake()->createWithContent('cv.txt', 'Un CV au format texte ne doit plus être accepté.');
+        $this->withToken('test-ingestion-key')
+            ->post('/api/v1/intake/'.$offer->public_id.'/applications', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('cv');
     }
 
     public function test_two_stage_pipeline_scores_a_qualified_application(): void
@@ -159,7 +167,7 @@ class RecruitmentFlowTest extends TestCase
         Queue::fake();
         Storage::fake('local');
         $application = $this->application();
-        Storage::disk('local')->put($application->cv_path, 'Laravel Vue TypeScript PostgreSQL Redis');
+        Storage::disk('local')->put($application->cv_path, app(DemoCvPdf::class)->render($this->candidateData(), 0));
         $this->app->bind(CandidateAnalyzer::class, fn () => new class implements CandidateAnalyzer
         {
             public function screen(JobOffer $offer, string $cvText): ScreeningResult
@@ -259,8 +267,8 @@ class RecruitmentFlowTest extends TestCase
             'candidate_email' => 'candidate@example.test',
             'source' => 'test-suite',
             'external_reference' => (string) fake()->uuid(),
-            'cv_path' => 'cvs/test/cv.txt',
-            'cv_original_name' => 'cv.txt',
+            'cv_path' => 'cvs/test/cv.pdf',
+            'cv_original_name' => 'cv.pdf',
             'status' => 'received',
             'status_token_hash' => hash('sha256', 'test-token'),
         ], $attributes));
@@ -281,5 +289,22 @@ class RecruitmentFlowTest extends TestCase
             'scoring_provider' => 'anthropic',
             'scoring_model' => null,
         ], $overrides);
+    }
+
+    private function uploadedCv(): UploadedFile
+    {
+        return UploadedFile::fake()->createWithContent('cv.pdf', app(DemoCvPdf::class)->render($this->candidateData(), 0));
+    }
+
+    /** @return array{name: string, role: string, years: string, skills: string, summary: string} */
+    private function candidateData(): array
+    {
+        return [
+            'name' => 'Bob Candidat',
+            'role' => 'Développeur full-stack',
+            'years' => '2019 2022 2026',
+            'skills' => 'Laravel PHP Vue TypeScript PostgreSQL Redis Docker tests automatisés',
+            'summary' => 'Conception de produits SaaS et collaboration avec des équipes pluridisciplinaires.',
+        ];
     }
 }

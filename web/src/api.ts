@@ -29,7 +29,7 @@ export interface CandidateApplication {
   uuid: string; candidate_name: string; candidate_email: string; cv_original_name: string | null; cv_available: boolean; cv_deleted_at: string | null; cover_letter: string | null; source?: string; external_reference?: string | null;
   status: string; scope_score: number | null; scope_reason: string | null; final_score: number | null;
   score_breakdown: Record<string, number> | null; ai_summary: string | null; candidate_feedback: string | null;
-  recruiter_rank: number | null; read_at: string | null; selected_at: string | null; notified_at: string | null;
+  recruiter_rank: number | null; read_at: string | null; selected_at: string | null; notified_at: string | null; notification_status: 'pending' | 'sent' | 'previewed' | null;
   created_at: string; annotations: Annotation[];
 }
 export interface TrackingStatus { application_uuid: string; offer: { uuid: string; title: string; company: string }; status: string; submitted_at: string; score: number | null; feedback: string | null }

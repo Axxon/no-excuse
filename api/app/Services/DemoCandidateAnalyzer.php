@@ -12,15 +12,18 @@ class DemoCandidateAnalyzer implements CandidateAnalyzer
 {
     public function screen(JobOffer $offer, string $cvText): ScreeningResult
     {
-        $keywords = $this->keywords(implode(' ', [...$offer->criteria, $offer->title, $offer->description]));
+        $keywords = $this->keywords(implode(' ', $offer->criteria));
         $candidate = $this->keywords($cvText);
         $matches = array_values(array_intersect($keywords, $candidate));
+        $missing = array_values(array_diff($this->keywords(implode(' ', $offer->criteria)), $candidate));
         $score = min(100, round((count($matches) / max(3, count($keywords))) * 180, 2));
 
         return new ScreeningResult(
             $score >= config('no-excuse.scope_threshold'),
             $score,
-            $matches === [] ? 'Aucun critère clé détecté dans le CV.' : 'Correspondances détectées : '.implode(', ', array_slice($matches, 0, 8)).'.',
+            $matches === []
+                ? 'Le CV ne présente pas d’élément démontrant les compétences principales attendues pour cette offre : '.implode(', ', array_slice($missing, 0, 6)).'.'
+                : 'Le CV mentionne '.implode(', ', array_slice($matches, 0, 5)).', mais ne démontre pas suffisamment les critères principaux suivants : '.implode(', ', array_slice($missing, 0, 6)).'.',
         );
     }
 

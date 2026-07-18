@@ -58,7 +58,7 @@ return [
     ],
     'scope_threshold' => (float) env('NO_EXCUSE_SCOPE_THRESHOLD', 25),
     'prompts' => [
-        'screening' => 'Évalue uniquement si le CV correspond au périmètre professionnel explicite de l’annonce. Ignore le nom, l’âge, le genre, l’origine, la photographie, l’adresse et toute autre donnée sensible. Un profil doit être conservé dès lors que ses compétences transférables rendent une analyse approfondie raisonnable.',
+        'screening' => 'Évalue uniquement si le CV correspond au périmètre professionnel explicite de l’annonce. Ignore le nom, l’âge, le genre, l’origine, la photographie, l’adresse et toute autre donnée sensible. Un profil doit être conservé dès lors que ses compétences transférables rendent une analyse approfondie raisonnable. Le motif doit être factuel, bienveillant, concis et directement partageable avec le candidat ; il cite uniquement les écarts professionnels observables entre le CV et l’annonce.',
         'scoring' => 'Compare le CV aux critères professionnels annoncés. Justifie chaque score par des éléments observables du CV, distingue les compétences démontrées des simples mentions et ne déduis jamais une caractéristique personnelle. Le score aide le RH à prioriser la lecture et ne constitue pas une décision automatique.',
     ],
 ];

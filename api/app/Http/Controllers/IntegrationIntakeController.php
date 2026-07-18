@@ -34,7 +34,7 @@ class IntegrationIntakeController extends Controller
             'candidate_name' => ['required', 'string', 'max:160'],
             'candidate_email' => ['required', 'email', 'max:255'],
             'cover_letter' => ['nullable', 'string', 'max:10000'],
-            'cv' => ['required', 'file', 'mimes:pdf,txt', 'max:10240'],
+            'cv' => ['required', 'file', 'mimes:pdf', 'mimetypes:application/pdf,application/x-pdf', 'max:10240'],
         ]);
         $data['candidate_email'] = Str::lower($data['candidate_email']);
 

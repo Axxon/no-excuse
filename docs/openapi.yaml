@@ -45,6 +45,10 @@ paths:
                 cv:
                   type: string
                   format: binary
+                  contentMediaType: application/pdf
+            encoding:
+              cv:
+                contentType: application/pdf
       responses:
         '202':
           description: Candidature enregistrée et mise en file.

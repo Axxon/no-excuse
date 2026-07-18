@@ -46,6 +46,7 @@ class ScreenApplication implements ShouldQueue
         if ($result->inScope) {
             ScoreApplication::dispatch($application->id)->onQueue('candidate-scoring');
         } else {
+            $application->events()->create(['type' => 'candidate_notification_queued', 'metadata' => ['status' => $application->status]]);
             SendCandidateDecision::dispatch($application->id)->onQueue('notifications');
         }
     }

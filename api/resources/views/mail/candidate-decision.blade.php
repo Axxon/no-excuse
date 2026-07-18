@@ -3,6 +3,10 @@
 
 @if ($application->status === 'rejected_out_of_scope')
 {{ $application->offer->rejection_message }}
+
+@if ($application->scope_reason)
+**Motif expliqué par l’analyse :** {{ $application->scope_reason }}
+@endif
 @elseif ($application->status === 'selected')
 Votre candidature pour **{{ $application->offer->title }}** a été sélectionnée. L'équipe de {{ $application->offer->company }} va vous contacter.
 @else
