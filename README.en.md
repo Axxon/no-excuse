@@ -26,7 +26,7 @@ I have other priorities, including finding a job, and do not claim that I can tu
 
 The application supports separate AI providers/models for screening and scoring, editable prompts under immutable fairness rules, 1–10 adaptive workers per queue, an MIT PDF reader, configurable CV and candidate-data retention, and an isolated public demo with capacity control. Demo PDF files are materialized once and shared read-only; lightweight Laravel jobs replay precomputed screening and scoring results without repeating PDF extraction or AI analysis for each visitor.
 
-Although the demo sends no candidate email, recruiters can preview the exact production HTML response inside an isolated frame. Independent work on no-excuse and [Sonomundi](https://sonomundi.com) can be supported on [Ko-fi](https://ko-fi.com/axxon).
+Although the demo sends no candidate email, recruiters can preview the exact production HTML response inside an isolated frame. Independent work on no-excuse and [Sonomundi](https://demo.electronic.sonomundi.com/) can be supported on [Ko-fi](https://ko-fi.com/axxon).
 
 ## Stack
 

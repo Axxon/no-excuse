@@ -84,6 +84,9 @@ async function joinWaitlist(): Promise<void> {
 
   <section class="support-card page-section">
     <div><span class="eyebrow">{{ t('home.supportEyebrow') }}</span><h2>{{ t('home.supportTitle') }}</h2><p>{{ t('home.supportText') }}</p></div>
-    <a class="button" href="https://ko-fi.com/axxon" target="_blank" rel="noopener noreferrer">{{ t('home.supportCta') }}</a>
+    <div class="actions">
+      <a class="button button-ghost" href="https://demo.electronic.sonomundi.com/" target="_blank" rel="noopener noreferrer">{{ t('home.sonomundiCta') }}</a>
+      <a class="button" href="https://ko-fi.com/axxon" target="_blank" rel="noopener noreferrer">{{ t('home.supportCta') }}</a>
+    </div>
   </section>
 </template>

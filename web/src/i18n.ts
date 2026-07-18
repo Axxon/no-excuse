@@ -15,7 +15,7 @@ export const messages = {
       metricThree: '100 %', metricThreeText: 'Des candidats informés à la fin du processus.',
       workflow: 'Un processus privé et traçable', step1: 'Connecter', step1Text: 'LinkedIn, un ATS ou votre site transmet le CV à l’API sécurisée.',
       step2: 'Qualifier', step2Text: 'Deux modèles configurables filtrent puis scorent.',
-      step3: 'Décider', step3Text: 'Le RH annote, réordonne et choisit humainement.', supportEyebrow: 'Open source indépendant', supportTitle: 'Soutenir no-excuse et Sonomundi', supportText: 'Ces outils sont développés ouvertement et demandent du temps, des serveurs et beaucoup de café. Un soutien aide à faire avancer no-excuse et Sonomundi.', supportCta: 'Soutenir sur Ko-fi',
+      step3: 'Décider', step3Text: 'Le RH annote, réordonne et choisit humainement.', supportEyebrow: 'Open source indépendant', supportTitle: 'Soutenir no-excuse et Sonomundi', supportText: 'Ces outils sont développés ouvertement et demandent du temps, des serveurs et beaucoup de café. Un soutien aide à faire avancer no-excuse et Sonomundi.', supportCta: 'Soutenir sur Ko-fi', sonomundiCta: 'Découvrir la démo Sonomundi',
     },
     offers: { title: 'Offres ouvertes', lead: 'Des campagnes avec une date de clôture et un engagement de réponse.', empty: 'Aucune offre ouverte pour le moment.', apply: 'Voir et candidater', closes: 'Clôture le' },
     apply: { title: 'Candidater', criteria: 'Critères annoncés', name: 'Nom complet', email: 'Adresse e-mail', letter: 'Message de motivation', cv: 'CV au format PDF', submit: 'Envoyer ma candidature', success: 'Candidature enregistrée', tokenWarning: 'Copiez ce jeton maintenant : il ne sera plus affiché.', track: 'Suivre cette candidature' },

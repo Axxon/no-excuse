@@ -140,7 +140,7 @@ Le mode public optionnel crée une sandbox logique dédiée à chaque visiteur. 
 
 La démo publique n’accepte aucun CV externe, n’appelle aucun fournisseur payant et ne transmet aucun e-mail candidat. Chaque réponse générée peut néanmoins être prévisualisée dans l’espace RH : c’est le véritable rendu HTML du mail de production, affiché dans une iframe isolée. Chaque sandbox possède son propre UUID d’organisation et ses propres jetons Sanctum. Elle est supprimée avec ses fichiers après quatre heures par défaut ou immédiatement lorsque le visiteur choisit de la libérer et se déconnecte. Vingt sandboxes simultanées sont autorisées au maximum et un même visiteur ne peut en créer qu’une pendant cette durée ; une liste d’attente opt-in peut envoyer un unique e-mail de disponibilité.
 
-Le développement indépendant de no-excuse et de [Sonomundi](https://sonomundi.com) peut être soutenu sur [Ko-fi](https://ko-fi.com/axxon).
+Le développement indépendant de no-excuse et de [Sonomundi](https://demo.electronic.sonomundi.com/) peut être soutenu sur [Ko-fi](https://ko-fi.com/axxon).
 
 Le déploiement VPS dédié utilise `compose.demo.yml` : PostgreSQL, Redis, l’API et les workers ne publient aucun port. Seul le proxy web écoute sur `DEMO_HTTP_PORT`. Consultez [le guide de déploiement de la démo](docs/public-demo-deployment.md).
 

@@ -23,7 +23,7 @@ onMounted(async () => { about.value = await apiRequest<About>('/about') })
       <h2>Responsabilité</h2>
       <p>Ce logiciel est fourni sans garantie. Il assiste la priorisation ; l’employeur reste responsable du traitement, de la conformité et de toute décision de recrutement. Ce texte est un modèle informatif à faire valider juridiquement avant une exploitation commerciale.</p>
       <h2>Soutenir le travail</h2>
-      <p>no-excuse et Sonomundi sont des projets indépendants développés ouvertement. Vous pouvez contribuer à leur temps de développement et à leur infrastructure.</p>
+      <p>no-excuse et <a href="https://demo.electronic.sonomundi.com/" target="_blank" rel="noopener noreferrer">Sonomundi</a> sont des projets indépendants développés ouvertement. Vous pouvez contribuer à leur temps de développement et à leur infrastructure.</p>
       <a class="button" href="https://ko-fi.com/axxon" target="_blank" rel="noopener noreferrer">Soutenir sur Ko-fi</a>
     </article>
   </section>
