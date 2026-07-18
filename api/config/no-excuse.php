@@ -22,7 +22,7 @@ return [
     ],
     'author' => [
         'name' => env('NO_EXCUSE_AUTHOR_NAME', 'Sébastien Grans (Axxon)'),
-        'linkedin_url' => env('NO_EXCUSE_AUTHOR_LINKEDIN_URL'),
+        'linkedin_url' => env('NO_EXCUSE_AUTHOR_LINKEDIN_URL', 'https://www.linkedin.com/in/axxonn/'),
     ],
     'ai' => [
         'mode' => env('NO_EXCUSE_AI_MODE', 'demo'),

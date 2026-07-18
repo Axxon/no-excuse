@@ -6,7 +6,7 @@ Le dépôt est distribué sous licence MIT. Elle autorise l’utilisation, la mo
 
 Ce choix est volontaire : no-excuse veut enlever les excuses qui empêchent d’améliorer l’expérience candidat. Le [manifeste du projet](../MANIFESTO.md) exprime l’intention — utiliser librement, livrer réellement et agir de façon responsable — sans ajouter de restriction juridique floue à la licence MIT.
 
-La page `/about` affiche « Sébastien Grans (Axxon) » par défaut. Un exploitant peut adapter `NO_EXCUSE_AUTHOR_NAME` et renseigner `NO_EXCUSE_AUTHOR_LINKEDIN_URL` pour son déploiement.
+La page `/about` affiche « Sébastien Grans (Axxon) » et son [profil LinkedIn](https://www.linkedin.com/in/axxonn/) par défaut. Un exploitant peut adapter `NO_EXCUSE_AUTHOR_NAME` et `NO_EXCUSE_AUTHOR_LINKEDIN_URL` pour son déploiement.
 
 Le bloc de responsabilité de cette page est un brouillon de CGU : aucune clause ne peut garantir une absence absolue de responsabilité. Avant publication commerciale, faites valider les CGU, la politique de confidentialité, les rôles RGPD, la base légale, les sous-traitants IA et les durées de conservation par un professionnel compétent.
 

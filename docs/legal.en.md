@@ -6,7 +6,7 @@ The repository is distributed under the MIT license. It permits use, modificatio
 
 That choice is deliberate: no-excuse aims to remove the excuses that prevent a better candidate experience. The [project manifesto](../MANIFESTO.md) states the intent — use it freely, actually ship it and act responsibly — without adding a vague legal restriction to MIT.
 
-The `/about` page displays “Sébastien Grans (Axxon)” by default. Operators may override `NO_EXCUSE_AUTHOR_NAME` and configure `NO_EXCUSE_AUTHOR_LINKEDIN_URL` for their deployment.
+The `/about` page displays “Sébastien Grans (Axxon)” and his [LinkedIn profile](https://www.linkedin.com/in/axxonn/) by default. Operators may override `NO_EXCUSE_AUTHOR_NAME` and `NO_EXCUSE_AUTHOR_LINKEDIN_URL` for their deployment.
 
 Its liability text is only a terms template: no clause can guarantee absolute immunity. Before commercial publication, obtain professional review of terms, privacy notice, GDPR roles/legal basis, AI subprocessors and retention periods.
 
