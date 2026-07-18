@@ -67,6 +67,7 @@ class RetentionMailAndWaitlistTest extends TestCase
             'candidate_name' => 'Test Candidate', 'candidate_email' => 'candidate@example.test',
             'cv_path' => 'cvs/test/rejected.pdf', 'cv_original_name' => 'cv.pdf', 'status' => 'rejected_out_of_scope',
             'scope_reason' => 'Le CV ne démontre pas une expérience PHP attendue pour ce poste.',
+            'candidate_feedback' => 'Ce message personnalisé ne doit pas apparaître.',
             'status_token_hash' => hash('sha256', 'token'),
         ]);
         $token = $user->createToken('notification-status')->plainTextToken;
@@ -77,10 +78,37 @@ class RetentionMailAndWaitlistTest extends TestCase
 
         (new SendCandidateDecision($application->id))->handle(app(ApplicationRetention::class));
 
-        Mail::assertSent(CandidateDecisionMail::class, fn (CandidateDecisionMail $mail): bool => str_contains($mail->render(), $application->scope_reason));
+        Mail::assertSent(CandidateDecisionMail::class, function (CandidateDecisionMail $mail) use ($application): bool {
+            $rendered = $mail->render();
+
+            return str_contains($rendered, $application->scope_reason)
+                && ! str_contains($rendered, $application->candidate_feedback);
+        });
         $this->withToken($token)->getJson('/api/offers/'.$offer->public_id.'/applications')
             ->assertOk()
             ->assertJsonFragment(['uuid' => $application->public_id, 'notification_status' => 'sent']);
+    }
+
+    public function test_final_decision_email_contains_the_personalized_candidate_message(): void
+    {
+        Mail::fake();
+        $user = User::factory()->create();
+        $offer = $user->jobOffers()->create([
+            'title' => 'Développeur Laravel', 'company' => 'Acme', 'description' => 'Poste test', 'criteria' => ['PHP'],
+            'rejection_message' => 'Merci pour votre candidature.', 'final_rejection_message' => 'Non retenu',
+            'ingestion_key_hash' => hash('sha256', 'key'), 'status' => 'closed',
+        ]);
+        $message = 'Votre échange a été très apprécié par toute l’équipe.';
+        $application = $offer->applications()->create([
+            'candidate_name' => 'Test Candidate', 'candidate_email' => 'candidate@example.test',
+            'cv_path' => 'cvs/test/finalist.pdf', 'cv_original_name' => 'cv.pdf', 'status' => 'rejected_final',
+            'final_score' => 82, 'candidate_feedback' => $message,
+            'status_token_hash' => hash('sha256', 'token'),
+        ]);
+
+        (new SendCandidateDecision($application->id))->handle(app(ApplicationRetention::class));
+
+        Mail::assertSent(CandidateDecisionMail::class, fn (CandidateDecisionMail $mail): bool => str_contains($mail->render(), $message));
     }
 
     public function test_waitlist_is_used_when_demo_capacity_is_full_and_notifies_after_expiry(): void

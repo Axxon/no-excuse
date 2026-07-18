@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { API_URL, apiRequest, type CandidateApplication, type Offer } from '../api'
@@ -9,6 +9,7 @@ import MailPreview from '../components/MailPreview.vue'
 
 const route = useRoute(); const { t } = useI18n(); const auth = useAuthStore(); const uuid = String(route.params.uuid)
 const offer = ref<Offer | null>(null); const applications = ref<CandidateApplication[]>([]); const error = ref(''); const closingDate = ref(''); const busy = ref(false)
+const feedbackDrafts = reactive<Record<string, string>>({}); const feedbackSavedUuid = ref('')
 const ingestionKey = ref('')
 const cvViewer = ref<{ blob: Blob; name: string; text: string | null } | null>(null)
 const mailPreview = ref<{ html: string; candidate: string } | null>(null)
@@ -16,6 +17,9 @@ const pending = computed(() => applications.value.filter(item => ['received', 's
 let poller: number | undefined
 async function load(): Promise<void> {
   const [offerPayload, applicationPayload] = await Promise.all([apiRequest<{ data: Offer }>(`/offers/${uuid}`, {}, auth.token), apiRequest<{ data: CandidateApplication[] }>(`/offers/${uuid}/applications`, {}, auth.token)])
+  applicationPayload.data.forEach((application) => {
+    if (!(application.uuid in feedbackDrafts)) feedbackDrafts[application.uuid] = application.candidate_feedback ?? ''
+  })
   offer.value = offerPayload.data; applications.value = applicationPayload.data
 }
 onMounted(async () => {
@@ -42,7 +46,11 @@ async function previewDecision(application: CandidateApplication): Promise<void>
   if (!response.ok) { error.value = t('common.error'); return }
   mailPreview.value = { html: await response.text(), candidate: application.candidate_name }
 }
-async function saveFeedback(application: CandidateApplication): Promise<void> { await apiRequest(`/applications/${application.uuid}/feedback`, { method: 'PUT', body: JSON.stringify({ candidate_feedback: application.candidate_feedback }) }, auth.token) }
+async function saveFeedback(application: CandidateApplication): Promise<void> {
+  const response = await apiRequest<{ data: CandidateApplication }>(`/applications/${application.uuid}/feedback`, { method: 'PUT', body: JSON.stringify({ candidate_feedback: feedbackDrafts[application.uuid] }) }, auth.token)
+  feedbackDrafts[application.uuid] = response.data.candidate_feedback ?? ''; feedbackSavedUuid.value = application.uuid
+  window.setTimeout(() => { if (feedbackSavedUuid.value === application.uuid) feedbackSavedUuid.value = '' }, 2500)
+}
 async function move(application: CandidateApplication, offset: number): Promise<void> {
   const top = applications.value.filter(item => item.status === 'shortlisted'); const index = top.findIndex(item => item.uuid === application.uuid); const target = index + offset; if (index < 0 || target < 0 || target >= top.length) return
   const temporary = top[index]; top[index] = top[target]; top[target] = temporary
@@ -76,8 +84,8 @@ async function rotateIngestionKey(): Promise<void> {
         <div class="candidate-main"><div class="candidate-title"><div><h2>{{ application.candidate_name }}</h2><p>{{ application.candidate_email }}<template v-if="application.source"> · {{ t('campaign.source') }} : {{ application.source }}</template></p></div><div class="candidate-statuses"><span v-if="application.notification_status" class="mail-status" :class="`mail-status-${application.notification_status}`">{{ t(`campaign.mail.${application.notification_status}`) }}</span><span class="status" :class="`status-${application.status}`">{{ t(`status.${application.status}`) }}</span></div></div>
           <p v-if="application.ai_summary" class="summary">{{ application.ai_summary }}</p><div v-if="application.score_breakdown" class="score-bars"><div v-for="(value, key) in application.score_breakdown" :key="key"><span>{{ key }}</span><progress :value="value" max="100" /><strong>{{ value }}</strong></div></div>
           <div v-if="application.annotations.length" class="notes"><p v-for="note in application.annotations" :key="note.uuid">{{ note.body }}</p></div>
-          <label class="feedback-field">{{ t('campaign.feedback') }}<textarea v-model="application.candidate_feedback" rows="2" /></label>
-          <div class="actions"><button class="button button-small button-ghost" :disabled="!application.cv_available" @click="openCv(application)">{{ application.cv_available ? t('campaign.viewCv') : t('campaign.cvDeleted') }}</button><button v-if="auth.user?.organization?.is_demo && application.notified_at && ['rejected_out_of_scope', 'rejected_final', 'selected'].includes(application.status)" class="button button-small button-ghost" @click="previewDecision(application)">{{ t('demo.previewMail') }}</button><button class="button button-small button-ghost" @click="addNote(application)">{{ t('campaign.addNote') }}</button><button class="button button-small button-ghost" @click="saveFeedback(application)">{{ t('campaign.saveFeedback') }}</button><template v-if="application.status === 'shortlisted'"><button class="icon-button" :aria-label="t('campaign.moveUp')" @click="move(application, -1)">↑</button><button class="icon-button" :aria-label="t('campaign.moveDown')" @click="move(application, 1)">↓</button><button class="button button-small" @click="select(application)">{{ t('campaign.select') }}</button></template></div>
+          <template v-if="application.status === 'shortlisted'"><label class="feedback-field">{{ t('campaign.feedback') }}<textarea v-model="feedbackDrafts[application.uuid]" rows="2" /></label><p v-if="feedbackSavedUuid === application.uuid" class="feedback-saved">{{ t('campaign.feedbackSaved') }}</p></template>
+          <div class="actions"><button class="button button-small button-ghost" :disabled="!application.cv_available" @click="openCv(application)">{{ application.cv_available ? t('campaign.viewCv') : t('campaign.cvDeleted') }}</button><button v-if="auth.user?.organization?.is_demo && application.notified_at && ['rejected_out_of_scope', 'rejected_final', 'selected'].includes(application.status)" class="button button-small button-ghost" @click="previewDecision(application)">{{ t('demo.previewMail') }}</button><button class="button button-small button-ghost" @click="addNote(application)">{{ t('campaign.addNote') }}</button><template v-if="application.status === 'shortlisted'"><button class="button button-small button-ghost" @click="saveFeedback(application)">{{ t('campaign.saveFeedback') }}</button><button class="icon-button" :aria-label="t('campaign.moveUp')" @click="move(application, -1)">↑</button><button class="icon-button" :aria-label="t('campaign.moveDown')" @click="move(application, 1)">↓</button><button class="button button-small" @click="select(application)">{{ t('campaign.select') }}</button></template></div>
         </div>
         <div class="score"><strong>{{ application.final_score?.toFixed(1) ?? '—' }}</strong><span>{{ t('campaign.score') }}</span></div>
       </article>

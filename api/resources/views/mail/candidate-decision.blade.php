@@ -14,9 +14,10 @@ Votre candidature pour **{{ $application->offer->title }}** a été sélectionn�
 
 Votre score d'adéquation final est de **{{ number_format($application->final_score ?? 0, 1, ',', ' ') }}/100**.
 
-@if ($application->candidate_feedback)
-**Retour du recruteur :** {{ $application->candidate_feedback }}
 @endif
+
+@if ($application->status !== 'rejected_out_of_scope' && $application->candidate_feedback)
+**Message personnalisé de l’équipe RH :** {{ $application->candidate_feedback }}
 @endif
 
 Merci pour le temps consacré à votre candidature.
