@@ -1,0 +1,17 @@
+.env
+.env.*
+!.env.example
+.idea/
+.vscode/
+api/vendor/
+api/node_modules/
+api/storage/*.key
+api/storage/framework/cache/data/*
+api/storage/framework/sessions/*
+api/storage/framework/views/*
+api/storage/logs/*
+api/.phpunit.result.cache
+api/database/database.sqlite
+web/node_modules/
+web/dist/
+coverage/

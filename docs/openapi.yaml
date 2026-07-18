@@ -1,0 +1,86 @@
+openapi: 3.1.0
+info:
+  title: no-excuse Intake API
+  version: 1.0.0
+  description: API privée d'ingestion de candidatures depuis un ATS, un job board ou un site carrière.
+servers:
+  - url: https://no-excuse.example/api
+paths:
+  /v1/intake/{offer_uuid}/applications:
+    post:
+      operationId: submitApplication
+      summary: Transmettre une candidature à un catalogue privé
+      security:
+        - ingestionKey: []
+      parameters:
+        - name: offer_uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [source, external_reference, candidate_name, candidate_email, cv]
+              properties:
+                source:
+                  type: string
+                  maxLength: 80
+                external_reference:
+                  type: string
+                  maxLength: 190
+                candidate_name:
+                  type: string
+                  maxLength: 160
+                candidate_email:
+                  type: string
+                  format: email
+                cover_letter:
+                  type: string
+                  maxLength: 10000
+                cv:
+                  type: string
+                  format: binary
+      responses:
+        '202':
+          description: Candidature enregistrée et mise en file.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntakeResponse'
+        '200':
+          description: La référence externe avait déjà été traitée.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntakeResponse'
+        '404':
+          description: Offre ou clé inconnue.
+        '409':
+          description: Campagne fermée.
+        '422':
+          description: Formulaire invalide.
+        '429':
+          description: Limite de débit atteinte.
+components:
+  securitySchemes:
+    ingestionKey:
+      type: http
+      scheme: bearer
+  schemas:
+    IntakeResponse:
+      type: object
+      required: [application_reference, status, duplicate]
+      properties:
+        application_reference:
+          type: string
+          format: uuid
+        status:
+          type: string
+          examples: [accepted]
+        duplicate:
+          type: boolean

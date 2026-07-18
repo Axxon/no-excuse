@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build containers
+        run: make build
+      - name: Install PHP dependencies
+        run: make install
+      - name: Start development services
+        run: make up
+      - name: Validate backend and frontend
+        run: make validate

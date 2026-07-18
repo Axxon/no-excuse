@@ -1,0 +1,40 @@
+export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:18080/api'
+
+export interface User { uuid: string; name: string; email: string }
+export interface AuthPayload { token: string; user: User }
+export interface ProviderOption { key: string; label: string; defaults: { screening: string; scoring: string } }
+export interface AiMeta { mode: string; providers: ProviderOption[] }
+export interface Offer {
+  uuid: string; title: string; company: string; location: string | null; description: string; criteria: string[];
+  rejection_message?: string; final_rejection_message?: string; screening_provider?: string; screening_model?: string | null;
+  scoring_provider?: string; scoring_model?: string | null; status?: string; opens_at?: string | null; closes_at: string | null;
+  applications_count?: number; pending_count?: number; shortlisted_count?: number;
+  intake_url?: string;
+}
+export interface Annotation { uuid: string; body: string; created_at: string }
+export interface CandidateApplication {
+  uuid: string; candidate_name: string; candidate_email: string; cv_original_name: string; cover_letter: string | null; source?: string; external_reference?: string | null;
+  status: string; scope_score: number | null; scope_reason: string | null; final_score: number | null;
+  score_breakdown: Record<string, number> | null; ai_summary: string | null; candidate_feedback: string | null;
+  recruiter_rank: number | null; read_at: string | null; selected_at: string | null; notified_at: string | null;
+  created_at: string; annotations: Annotation[];
+}
+export interface TrackingStatus { application_uuid: string; offer: { uuid: string; title: string; company: string }; status: string; submitted_at: string; score: number | null; feedback: string | null }
+
+interface Resource<T> { data: T }
+
+export async function apiRequest<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {
+  const headers = new Headers(options.headers)
+  headers.set('Accept', 'application/json')
+  if (!(options.body instanceof FormData)) headers.set('Content-Type', 'application/json')
+  if (token) headers.set('Authorization', `Bearer ${token}`)
+  const response = await fetch(`${API_URL}${path}`, { ...options, headers })
+  if (!response.ok) {
+    const error = await response.json() as { message?: string }
+    throw new Error(error.message ?? `HTTP ${response.status}`)
+  }
+  if (response.status === 204) return {} as T
+  return await response.json() as T
+}
+
+export const unwrap = <T>(resource: Resource<T>): T => resource.data
