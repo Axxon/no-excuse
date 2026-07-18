@@ -1,18 +1,26 @@
 <x-mail::message>
 @if ($messageLocale === 'en')
-# A demo slot is available
+# It is your turn 🎉
 
-A temporary no-excuse sandbox has become available. Visit the demo and start it while capacity remains.
+A temporary no-excuse sandbox has just become available. You can now explore the recruiter workspace with 20 realistic fictional applications.
 
-<x-mail::button :url="config('app.url')">Open no-excuse</x-mail::button>
+<x-mail::panel>
+The slot is not permanently reserved: start the demo while capacity is still available. Your sandbox will then remain active for up to four hours.
+</x-mail::panel>
+
+<x-mail::button :url="config('app.url')">Start my demo</x-mail::button>
 
 You received this single email because you joined the demo waitlist. Your address will not be used for marketing.
 @else
-# Une place est disponible
+# C’est votre tour 🎉
 
-Une sandbox temporaire no-excuse vient de se libérer. Ouvrez la démo et lancez-la tant qu’une place reste disponible.
+Une sandbox temporaire no-excuse vient de se libérer. Vous pouvez maintenant découvrir l’espace RH avec 20 candidatures fictives réalistes.
 
-<x-mail::button :url="config('app.url')">Ouvrir no-excuse</x-mail::button>
+<x-mail::panel>
+La place n’est pas réservée indéfiniment : lancez la démo tant que la capacité est disponible. Votre sandbox restera ensuite accessible pendant quatre heures maximum.
+</x-mail::panel>
+
+<x-mail::button :url="config('app.url')">Lancer ma démo</x-mail::button>
 
 Vous recevez cet unique e-mail parce que vous avez rejoint la liste d’attente de la démo. Votre adresse ne sera pas utilisée à des fins commerciales.
 @endif

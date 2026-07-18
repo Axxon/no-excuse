@@ -14,6 +14,14 @@ class DemoController extends Controller
     public function status(DemoSandbox $sandbox): JsonResponse
     {
         $activeSessions = $sandbox->activeCount();
+        $waiting = DemoWaitlistEntry::query()->where('status', 'waiting')->oldest();
+        $waitlistCount = (clone $waiting)->count();
+        $waitlist = $waiting->limit(20)->get()->values()->map(
+            fn (DemoWaitlistEntry $entry, int $index): array => [
+                'position' => $index + 1,
+                'masked_email' => $entry->maskedEmail(),
+            ],
+        );
 
         return response()->json([
             'enabled' => (bool) config('no-excuse.public_demo.enabled'),
@@ -22,6 +30,8 @@ class DemoController extends Controller
             'active_sessions' => $activeSessions,
             'max_sessions' => $sandbox->maxSessions(),
             'at_capacity' => $activeSessions >= $sandbox->maxSessions(),
+            'waitlist_count' => $waitlistCount,
+            'waitlist' => $waitlist,
         ]);
     }
 

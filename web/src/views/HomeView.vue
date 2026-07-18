@@ -19,7 +19,7 @@ async function startDemo(): Promise<void> {
 }
 async function joinWaitlist(): Promise<void> {
   error.value = ''
-  try { await apiRequest('/demo/waitlist', { method: 'POST', body: JSON.stringify({ email: waitlistEmail.value, locale: 'fr' }) }); waitlistSent.value = true }
+  try { await apiRequest('/demo/waitlist', { method: 'POST', body: JSON.stringify({ email: waitlistEmail.value, locale: 'fr' }) }); waitlistSent.value = true; await loadDemoStatus() }
   catch (caught) { error.value = caught instanceof Error ? caught.message : t('common.error') }
 }
 </script>
@@ -40,6 +40,11 @@ async function joinWaitlist(): Promise<void> {
       <p v-if="error" class="alert">{{ error }}</p>
       <form v-if="demo?.enabled && demo.at_capacity && !waitlistSent" class="waitlist-form" @submit.prevent="joinWaitlist"><label>{{ t('home.waitlistLead') }}<input v-model="waitlistEmail" required type="email" :placeholder="t('home.waitlistPlaceholder')" /></label><button class="button button-small" type="submit">{{ t('home.waitlistCta') }}</button></form>
       <p v-if="waitlistSent" class="success-line">{{ t('home.waitlistSuccess') }}</p>
+      <aside v-if="demo?.waitlist_count" class="waitlist-queue" aria-live="polite">
+        <div><strong>{{ t('home.waitlistQueueTitle') }}</strong><span>{{ t('home.waitlistQueueCount', { count: demo.waitlist_count }) }}</span></div>
+        <ol><li v-for="entry in demo.waitlist" :key="entry.position"><span>{{ entry.position }}</span><code>{{ entry.masked_email }}</code></li></ol>
+        <small>{{ t('home.waitlistPrivacy') }}</small>
+      </aside>
     </div>
     <div class="hero-visual" aria-hidden="true">
       <div class="signal-card signal-card-main"><span>94</span><small>match</small></div>

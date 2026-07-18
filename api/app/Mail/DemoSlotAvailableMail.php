@@ -16,7 +16,7 @@ class DemoSlotAvailableMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: $this->messageLocale === 'en' ? 'A no-excuse demo slot is available' : 'Une place est disponible sur la démo no-excuse');
+        return new Envelope(subject: $this->messageLocale === 'en' ? '[no-excuse] It is your turn — a demo slot is available' : '[no-excuse] C’est votre tour — une place est disponible');
     }
 
     public function content(): Content
