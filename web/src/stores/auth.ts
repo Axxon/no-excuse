@@ -36,10 +36,13 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout(): Promise<void> {
-    if (token.value) await apiRequest('/auth/logout', { method: 'POST' }, token.value)
-    token.value = ''
-    user.value = null
-    localStorage.removeItem('no-excuse-token')
+    try {
+      if (token.value) await apiRequest('/auth/logout', { method: 'POST' }, token.value)
+    } finally {
+      token.value = ''
+      user.value = null
+      localStorage.removeItem('no-excuse-token')
+    }
   }
 
   return { token, user, isAuthenticated, login, setup, startDemo, loadUser, logout }
