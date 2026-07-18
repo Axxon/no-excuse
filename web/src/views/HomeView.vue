@@ -59,4 +59,9 @@ async function joinWaitlist(): Promise<void> {
       <article><span class="step-number">03</span><h2>{{ t('home.step3') }}</h2><p>{{ t('home.step3Text') }}</p></article>
     </div>
   </section>
+
+  <section class="support-card page-section">
+    <div><span class="eyebrow">{{ t('home.supportEyebrow') }}</span><h2>{{ t('home.supportTitle') }}</h2><p>{{ t('home.supportText') }}</p></div>
+    <a class="button" href="https://ko-fi.com/axxon" target="_blank" rel="noopener noreferrer">{{ t('home.supportCta') }}</a>
+  </section>
 </template>

@@ -38,6 +38,7 @@ Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function (): void {
     Route::put('/offers/{offer}/applications/reorder', [ApplicationController::class, 'reorder']);
     Route::get('/applications/{application}', [ApplicationController::class, 'show']);
     Route::get('/applications/{application}/cv', [ApplicationController::class, 'cv']);
+    Route::get('/applications/{application}/decision-preview', [ApplicationController::class, 'decisionPreview']);
     Route::post('/applications/{application}/annotations', [ApplicationController::class, 'annotate']);
     Route::put('/applications/{application}/feedback', [ApplicationController::class, 'feedback']);
     Route::post('/applications/{application}/select', [ApplicationController::class, 'select']);

@@ -48,6 +48,7 @@ La réponse publique doit indiquer `enabled: true`. Depuis la page principale, *
 - `NO_EXCUSE_DEMO_MAX_SESSIONS` borne les espaces actifs ;
 - la valeur par défaut est `3`; les visiteurs supplémentaires rejoignent volontairement la liste d’attente ;
 - avec `MAIL_MAILER=log`, aucune alerte ne quitte le serveur ; configurez un vrai transport selon le [guide e-mail](email.md) pour activer les alertes de disponibilité ;
+- les réponses aux faux candidats restent consultables avec **Voir l’e-mail candidat** : l’API rend le vrai Mailable de production, uniquement pour l’organisation de démo authentifiée et sans mise en cache ;
 - les volumes PostgreSQL et CV ne sont jamais partagés avec une instance d’entreprise.
 
 Pour une mise à jour, récupérez le nouveau commit privé puis relancez `make demo-prod-deploy`. Ne supprimez pas les volumes pendant une mise à jour ordinaire.

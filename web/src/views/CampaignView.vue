@@ -5,11 +5,13 @@ import { useI18n } from 'vue-i18n'
 import { API_URL, apiRequest, type CandidateApplication, type Offer } from '../api'
 import { useAuthStore } from '../stores/auth'
 import CvViewer from '../components/CvViewer.vue'
+import MailPreview from '../components/MailPreview.vue'
 
 const route = useRoute(); const { t } = useI18n(); const auth = useAuthStore(); const uuid = String(route.params.uuid)
 const offer = ref<Offer | null>(null); const applications = ref<CandidateApplication[]>([]); const error = ref(''); const closingDate = ref(''); const busy = ref(false)
 const ingestionKey = ref('')
 const cvViewer = ref<{ blob: Blob; name: string; text: string | null } | null>(null)
+const mailPreview = ref<{ html: string; candidate: string } | null>(null)
 const pending = computed(() => applications.value.filter(item => ['received', 'screening', 'qualified', 'scoring'].includes(item.status)).length)
 let poller: number | undefined
 async function load(): Promise<void> {
@@ -34,6 +36,11 @@ async function openCv(application: CandidateApplication): Promise<void> {
 async function addNote(application: CandidateApplication): Promise<void> {
   const body = window.prompt(t('campaign.addNote')); if (!body) return
   await apiRequest(`/applications/${application.uuid}/annotations`, { method: 'POST', body: JSON.stringify({ body }) }, auth.token); await load()
+}
+async function previewDecision(application: CandidateApplication): Promise<void> {
+  const response = await fetch(`${API_URL}/applications/${application.uuid}/decision-preview`, { headers: { Authorization: `Bearer ${auth.token}`, Accept: 'text/html' } })
+  if (!response.ok) { error.value = t('common.error'); return }
+  mailPreview.value = { html: await response.text(), candidate: application.candidate_name }
 }
 async function saveFeedback(application: CandidateApplication): Promise<void> { await apiRequest(`/applications/${application.uuid}/feedback`, { method: 'PUT', body: JSON.stringify({ candidate_feedback: application.candidate_feedback }) }, auth.token) }
 async function move(application: CandidateApplication, offset: number): Promise<void> {
@@ -70,11 +77,12 @@ async function rotateIngestionKey(): Promise<void> {
           <p v-if="application.ai_summary" class="summary">{{ application.ai_summary }}</p><div v-if="application.score_breakdown" class="score-bars"><div v-for="(value, key) in application.score_breakdown" :key="key"><span>{{ key }}</span><progress :value="value" max="100" /><strong>{{ value }}</strong></div></div>
           <div v-if="application.annotations.length" class="notes"><p v-for="note in application.annotations" :key="note.uuid">{{ note.body }}</p></div>
           <label class="feedback-field">{{ t('campaign.feedback') }}<textarea v-model="application.candidate_feedback" rows="2" /></label>
-          <div class="actions"><button class="button button-small button-ghost" :disabled="!application.cv_available" @click="openCv(application)">{{ application.cv_available ? t('campaign.viewCv') : t('campaign.cvDeleted') }}</button><button class="button button-small button-ghost" @click="addNote(application)">{{ t('campaign.addNote') }}</button><button class="button button-small button-ghost" @click="saveFeedback(application)">{{ t('campaign.saveFeedback') }}</button><template v-if="application.status === 'shortlisted'"><button class="icon-button" :aria-label="t('campaign.moveUp')" @click="move(application, -1)">↑</button><button class="icon-button" :aria-label="t('campaign.moveDown')" @click="move(application, 1)">↓</button><button class="button button-small" @click="select(application)">{{ t('campaign.select') }}</button></template></div>
+          <div class="actions"><button class="button button-small button-ghost" :disabled="!application.cv_available" @click="openCv(application)">{{ application.cv_available ? t('campaign.viewCv') : t('campaign.cvDeleted') }}</button><button v-if="auth.user?.organization?.is_demo && application.notified_at && ['rejected_out_of_scope', 'rejected_final', 'selected'].includes(application.status)" class="button button-small button-ghost" @click="previewDecision(application)">{{ t('demo.previewMail') }}</button><button class="button button-small button-ghost" @click="addNote(application)">{{ t('campaign.addNote') }}</button><button class="button button-small button-ghost" @click="saveFeedback(application)">{{ t('campaign.saveFeedback') }}</button><template v-if="application.status === 'shortlisted'"><button class="icon-button" :aria-label="t('campaign.moveUp')" @click="move(application, -1)">↑</button><button class="icon-button" :aria-label="t('campaign.moveDown')" @click="move(application, 1)">↓</button><button class="button button-small" @click="select(application)">{{ t('campaign.select') }}</button></template></div>
         </div>
         <div class="score"><strong>{{ application.final_score?.toFixed(1) ?? '—' }}</strong><span>{{ t('campaign.score') }}</span></div>
       </article>
     </div>
   </section>
   <CvViewer v-if="cvViewer" v-bind="cvViewer" @close="cvViewer = null" />
+  <MailPreview v-if="mailPreview" v-bind="mailPreview" @close="mailPreview = null" />
 </template>

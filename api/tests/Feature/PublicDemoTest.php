@@ -58,6 +58,15 @@ class PublicDemoTest extends TestCase
         );
         $this->assertGreaterThanOrEqual(10, $offer->applications()->where('status', 'qualified')->count());
         $this->assertGreaterThan(0, $offer->applications()->where('status', 'rejected_out_of_scope')->count());
+        $rejected = $offer->applications()->where('status', 'rejected_out_of_scope')->firstOrFail();
+        (new SendCandidateDecision($rejected->id))->handle(app(ApplicationRetention::class));
+        $demoToken = $user->createToken('mail-preview')->plainTextToken;
+        $this->withToken($demoToken)
+            ->get('/api/applications/'.$rejected->public_id.'/decision-preview')
+            ->assertOk()
+            ->assertHeader('Cache-Control', 'no-store, private')
+            ->assertSee('Bonjour '.$rejected->candidate_name, false)
+            ->assertSee($offer->rejection_message, false);
 
         $offer->applications()->where('status', 'qualified')->pluck('id')->each(
             fn (int $id) => (new ScoreApplication($id))->handle($analyzer, $extractor),

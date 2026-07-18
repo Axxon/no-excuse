@@ -10,4 +10,6 @@ Run `make demo-prod-deploy`, then point an existing HTTPS reverse proxy to `127.
 
 Sandboxes expire after four hours. `NO_EXCUSE_DEMO_MAX_SESSIONS` defaults to 3; excess visitors may opt into the availability waitlist. `MAIL_MAILER=log` keeps all alerts local. Configure a real transport using the [email guide](email.en.md) to send availability messages. Fictional candidate emails are never sent. The scheduler prunes expired sandboxes every fifteen minutes and notifies waiting visitors when capacity returns.
 
+Recruiters can still select **View candidate email** for a decision-ready fictional application. The authenticated demo-only endpoint renders the actual production Mailable in a sandboxed frame and returns `Cache-Control: no-store`.
+
 The profile runs PostgreSQL, Redis, API, queue workers, scheduler and static frontend without exposing internal service ports. Update by pulling the private source and rerunning the deploy target; do not delete volumes during a routine update.

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\ApplicationResource;
 use App\Jobs\SendCandidateDecision;
+use App\Mail\CandidateDecisionMail;
 use App\Models\Application;
 use App\Models\JobOffer;
 use Illuminate\Http\JsonResponse;
@@ -41,6 +42,17 @@ class ApplicationController extends Controller
         $this->markAsRead($application);
 
         return Storage::disk('local')->download($application->cv_path, $application->cv_original_name);
+    }
+
+    public function decisionPreview(Request $request, Application $application)
+    {
+        $this->authorizeApplication($request, $application);
+        abort_unless($application->offer->organization?->is_demo, 404);
+        abort_unless($application->notified_at && in_array($application->status, ['rejected_out_of_scope', 'rejected_final', 'selected'], true), 409, 'La décision candidat n’est pas encore disponible.');
+
+        return response((new CandidateDecisionMail($application->load('offer.organization')))->render())
+            ->header('Content-Type', 'text/html; charset=UTF-8')
+            ->header('Cache-Control', 'no-store');
     }
 
     public function annotate(Request $request, Application $application): JsonResponse

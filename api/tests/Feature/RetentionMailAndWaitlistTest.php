@@ -48,6 +48,8 @@ class RetentionMailAndWaitlistTest extends TestCase
         $this->assertSame('rejected_final', $application->status);
         $this->assertSame(72.0, $application->final_score);
         $this->assertDatabaseHas('application_events', ['application_id' => $application->id, 'type' => 'cv_deleted_by_retention']);
+        $token = $user->createToken('no-preview-outside-demo')->plainTextToken;
+        $this->withToken($token)->get('/api/applications/'.$application->public_id.'/decision-preview')->assertNotFound();
     }
 
     public function test_waitlist_is_used_when_demo_capacity_is_full_and_notifies_after_expiry(): void

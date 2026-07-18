@@ -14,6 +14,8 @@ Open-source, self-hosted recruitment workflow for accountable candidate processi
 
 The application supports separate AI providers/models for screening and scoring, editable prompts, 1–10 adaptive workers per queue, an MIT PDF reader, rejected-CV retention, and an isolated deterministic public demo with capacity control.
 
+Although the demo sends no candidate email, recruiters can preview the exact production HTML response inside an isolated frame. Independent work on no-excuse and [Sonomundi](https://sonomundi.com) can be supported on [Ko-fi](https://ko-fi.com/axxon).
+
 ## Stack
 
 PHP 8.5, Laravel 13, Vue 3, TypeScript 6, Vite 8, PostgreSQL 18, Redis 8, Docker Compose and Make.
