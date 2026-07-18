@@ -52,7 +52,9 @@ Pour une mise à jour, récupérez le nouveau commit privé puis relancez `make 
 
 `compose.remote.yml` est indépendant du fournisseur d'hébergement. Il fonctionne
 avec tout moteur Docker Compose capable de construire depuis une archive HTTP.
-Le contexte `SOURCE_ARCHIVE_URL` peut être une URL GitHub signée et éphémère :
+Par défaut, le contexte de construction est le dépôt courant (`.`). La variable
+`SOURCE_ARCHIVE_URL` permet aussi d'utiliser une archive distante, par exemple
+une URL GitHub signée et éphémère :
 le dépôt reste privé et aucun jeton GitHub n'est enregistré sur le serveur. Les
 Dockerfiles sous `deploy/remote/` construisent l'API et le front depuis la racine
 de cette archive.

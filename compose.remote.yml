@@ -1,13 +1,11 @@
-name: no-excuse-demo
-
 x-api: &api
   build:
-    context: ${SOURCE_ARCHIVE_URL:?SOURCE_ARCHIVE_URL is required}
+    context: ${SOURCE_ARCHIVE_URL:-.}
     dockerfile: deploy/remote/api.Dockerfile
   restart: unless-stopped
   environment:
     APP_NAME: no-excuse-demo
-    APP_KEY: ${APP_KEY:?APP_KEY is required}
+    APP_KEY: ${APP_KEY}
     APP_URL: https://no-excuse.pro
     APP_ENV: production
     APP_DEBUG: "false"
@@ -16,7 +14,7 @@ x-api: &api
     DB_PORT: 5432
     DB_DATABASE: no_excuse_demo
     DB_USERNAME: no_excuse_demo
-    DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+    DB_PASSWORD: ${DB_PASSWORD}
     CACHE_STORE: redis
     QUEUE_CONNECTION: redis
     REDIS_CLIENT: predis
@@ -42,13 +40,13 @@ x-api: &api
 services:
   migrate:
     build:
-      context: ${SOURCE_ARCHIVE_URL:?SOURCE_ARCHIVE_URL is required}
+      context: ${SOURCE_ARCHIVE_URL:-.}
       dockerfile: deploy/remote/api.Dockerfile
     command: php artisan migrate --force
     restart: "no"
     environment:
       APP_NAME: no-excuse-demo
-      APP_KEY: ${APP_KEY:?APP_KEY is required}
+      APP_KEY: ${APP_KEY}
       APP_URL: https://no-excuse.pro
       APP_ENV: production
       APP_DEBUG: "false"
@@ -57,7 +55,7 @@ services:
       DB_PORT: 5432
       DB_DATABASE: no_excuse_demo
       DB_USERNAME: no_excuse_demo
-      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      DB_PASSWORD: ${DB_PASSWORD}
       CACHE_STORE: redis
       QUEUE_CONNECTION: redis
       REDIS_CLIENT: predis
@@ -96,7 +94,7 @@ services:
 
   web:
     build:
-      context: ${SOURCE_ARCHIVE_URL:?SOURCE_ARCHIVE_URL is required}
+      context: ${SOURCE_ARCHIVE_URL:-.}
       dockerfile: deploy/remote/web.Dockerfile
       args:
         VITE_API_URL: /api
@@ -114,7 +112,7 @@ services:
     environment:
       POSTGRES_DB: no_excuse_demo
       POSTGRES_USER: no_excuse_demo
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - demo-postgres:/var/lib/postgresql
     healthcheck:
