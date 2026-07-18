@@ -47,6 +47,15 @@ class PublicDemoTest extends TestCase
         $this->assertDatabaseCount('applications', 40);
         Queue::assertPushed(ScreenApplication::class, 40);
 
+        $this->getJson('/api/demo')
+            ->assertOk()
+            ->assertJson([
+                'enabled' => true,
+                'candidate_count' => 20,
+                'active_sessions' => 2,
+                'at_capacity' => false,
+            ]);
+
         $applications = Application::query()->get();
         $this->assertTrue($applications->every(fn ($application): bool => str_ends_with($application->cv_path, '.pdf')));
         $this->assertTrue($applications->every(fn ($application): bool => str_ends_with($application->cv_original_name, '.pdf')));

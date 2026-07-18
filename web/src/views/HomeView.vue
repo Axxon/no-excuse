@@ -6,12 +6,15 @@ import { apiRequest, type DemoStatus } from '../api'
 import { useAuthStore } from '../stores/auth'
 
 const { t } = useI18n()
-const router = useRouter(); const auth = useAuthStore(); const demo = ref<DemoStatus | null>(null); const starting = ref(false); const error = ref(''); const waitlistEmail = ref(''); const waitlistSent = ref(false); const showWaitlist = ref(false)
-onMounted(async () => { try { demo.value = await apiRequest<DemoStatus>('/demo') } catch { demo.value = null } })
+const router = useRouter(); const auth = useAuthStore(); const demo = ref<DemoStatus | null>(null); const starting = ref(false); const error = ref(''); const waitlistEmail = ref(''); const waitlistSent = ref(false)
+async function loadDemoStatus(): Promise<void> {
+  try { demo.value = await apiRequest<DemoStatus>('/demo') } catch { demo.value = null }
+}
+onMounted(loadDemoStatus)
 async function startDemo(): Promise<void> {
   starting.value = true; error.value = ''
   try { const offerUuid = await auth.startDemo(); await router.push(`/dashboard/offers/${offerUuid}`) }
-  catch (caught) { error.value = caught instanceof Error ? caught.message : t('common.error'); showWaitlist.value = true }
+  catch (caught) { error.value = caught instanceof Error ? caught.message : t('common.error'); await loadDemoStatus() }
   finally { starting.value = false }
 }
 async function joinWaitlist(): Promise<void> {
@@ -28,13 +31,14 @@ async function joinWaitlist(): Promise<void> {
       <h1>{{ t('home.title') }}</h1>
       <p class="hero-lead">{{ t('home.lead') }}</p>
       <div class="actions">
-        <button v-if="demo?.enabled" class="button" :disabled="starting" @click="startDemo">{{ starting ? t('home.demoStarting') : t('home.demoCta') }}</button>
+        <button v-if="demo?.enabled" class="button" :disabled="starting || demo.at_capacity" @click="startDemo">{{ starting ? t('home.demoStarting') : (demo.at_capacity ? t('home.demoFull') : t('home.demoCta')) }}</button>
         <RouterLink class="button button-ghost" to="/login">{{ t('home.recruiterCta') }}</RouterLink>
         <a class="button button-ghost" href="https://github.com/Axxon/no-excuse#démarrage" target="_blank" rel="noreferrer">{{ t('home.installCta') }}</a>
       </div>
       <p v-if="demo?.enabled" class="demo-promise">{{ t('home.demoPromise', { count: demo.candidate_count, hours: demo.lifetime_hours }) }}</p>
+      <p v-if="demo?.enabled" class="demo-capacity">{{ t('home.demoActiveSessions', { count: demo.active_sessions }) }}</p>
       <p v-if="error" class="alert">{{ error }}</p>
-      <form v-if="demo?.enabled && (demo.at_capacity || showWaitlist) && !waitlistSent" class="waitlist-form" @submit.prevent="joinWaitlist"><label>{{ t('home.waitlistLead') }}<input v-model="waitlistEmail" required type="email" :placeholder="t('home.waitlistPlaceholder')" /></label><button class="button button-small" type="submit">{{ t('home.waitlistCta') }}</button></form>
+      <form v-if="demo?.enabled && demo.at_capacity && !waitlistSent" class="waitlist-form" @submit.prevent="joinWaitlist"><label>{{ t('home.waitlistLead') }}<input v-model="waitlistEmail" required type="email" :placeholder="t('home.waitlistPlaceholder')" /></label><button class="button button-small" type="submit">{{ t('home.waitlistCta') }}</button></form>
       <p v-if="waitlistSent" class="success-line">{{ t('home.waitlistSuccess') }}</p>
     </div>
     <div class="hero-visual" aria-hidden="true">
@@ -48,7 +52,7 @@ async function joinWaitlist(): Promise<void> {
   <section class="access-paths page-section">
     <div class="section-title"><div><span class="eyebrow">{{ t('home.accessEyebrow') }}</span><h2>{{ t('home.accessTitle') }}</h2></div></div>
     <div class="access-grid">
-      <article><span>1</span><h3>{{ t('home.accessDemoTitle') }}</h3><p>{{ t('home.accessDemoText') }}</p><button v-if="demo?.enabled" class="text-button" :disabled="starting" @click="startDemo">{{ t('home.demoCta') }} →</button></article>
+      <article><span>1</span><h3>{{ t('home.accessDemoTitle') }}</h3><p>{{ t('home.accessDemoText') }}</p><button v-if="demo?.enabled" class="text-button" :disabled="starting || demo.at_capacity" @click="startDemo">{{ demo.at_capacity ? t('home.demoFull') : t('home.demoCta') }} →</button></article>
       <article><span>2</span><h3>{{ t('home.accessInstallTitle') }}</h3><p>{{ t('home.accessInstallText') }}</p><a class="text-button" href="https://github.com/Axxon/no-excuse#démarrage" target="_blank" rel="noopener noreferrer">{{ t('home.installCta') }} →</a></article>
       <article><span>3</span><h3>{{ t('home.accessLoginTitle') }}</h3><p>{{ t('home.accessLoginText') }}</p><RouterLink class="text-button" to="/login">{{ t('home.loginCta') }} →</RouterLink></article>
     </div>

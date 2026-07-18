@@ -90,6 +90,10 @@ class RetentionMailAndWaitlistTest extends TestCase
         config()->set('no-excuse.public_demo.processing_delay_seconds', 0);
         ['user' => $user] = app(DemoSandbox::class)->create();
 
+        $this->getJson('/api/demo')
+            ->assertOk()
+            ->assertJson(['active_sessions' => 1, 'at_capacity' => true]);
+
         $this->postJson('/api/demo/sessions')->assertServiceUnavailable();
         $this->postJson('/api/demo/waitlist', ['email' => 'rh@example.test', 'locale' => 'fr'])->assertAccepted();
         $this->assertDatabaseHas('demo_waitlist_entries', ['email_hash' => hash('sha256', 'rh@example.test'), 'status' => 'waiting']);

@@ -12,11 +12,14 @@ class DemoController extends Controller
 {
     public function status(DemoSandbox $sandbox): JsonResponse
     {
+        $activeSessions = $sandbox->activeCount();
+
         return response()->json([
             'enabled' => (bool) config('no-excuse.public_demo.enabled'),
             'candidate_count' => 20,
             'lifetime_hours' => (int) config('no-excuse.public_demo.lifetime_hours'),
-            'at_capacity' => $sandbox->activeCount() >= $sandbox->maxSessions(),
+            'active_sessions' => $activeSessions,
+            'at_capacity' => $activeSessions >= $sandbox->maxSessions(),
         ]);
     }
 
