@@ -52,6 +52,9 @@ services:
   web:
     build:
       context: ./web
+      args:
+        USER_ID: ${USER_ID:-1000}
+        GROUP_ID: ${GROUP_ID:-1000}
     working_dir: /app
     volumes:
       - ./web:/app
