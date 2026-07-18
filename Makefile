@@ -6,7 +6,7 @@ GROUP_ID := $(shell id -g)
 DEMO_ENV_FILE ?= .env.demo
 DEMO_PROJECT_NAME ?= no-excuse-demo
 
-.PHONY: help setup demo install scaffold scaffold-api scaffold-web upgrade-api runtime-version build up restart down logs composer artisan npm mail-test test lint validate remote-config remote-build demo-prod-build demo-prod-up demo-prod-deploy demo-prod-logs demo-prod-ps
+.PHONY: help setup demo install scaffold scaffold-api scaffold-web upgrade-api runtime-version build up restart down logs composer artisan npm mail-test test lint audit validate remote-config remote-build demo-prod-build demo-prod-up demo-prod-deploy demo-prod-logs demo-prod-ps
 
 help:
 	@echo "no-excuse"
@@ -20,6 +20,7 @@ help:
 	@echo "  make restart   Reload services after a server configuration change"
 	@echo "  make test      Run the backend suite in the isolated test stack"
 	@echo "  make lint      Check PHP formatting and build the typed frontend"
+	@echo "  make audit     Check locked PHP and JavaScript dependencies"
 	@echo "  make validate  Run the complete validation rail"
 	@echo "  make mail-test EMAIL=you@example.com Send a transport test email"
 	@echo "  make remote-config Validate the provider-neutral remote profile"
@@ -101,7 +102,11 @@ lint:
 	$(DOCKER) compose exec api vendor/bin/pint --test
 	$(DOCKER) compose exec web npm run build
 
-validate: test lint
+audit:
+	$(DOCKER) compose exec api composer audit --locked --no-interaction
+	$(DOCKER) compose exec web npm audit --audit-level=high
+
+validate: test lint audit
 
 remote-config:
 	SOURCE_ARCHIVE_URL=https://example.invalid/no-excuse.tar.gz APP_URL=https://demo.example.com APP_KEY=base64:validation DB_PASSWORD=validation MAIL_USERNAME=validation MAIL_PASSWORD=validation MAIL_FROM_ADDRESS=validation@example.com $(DOCKER) compose -f compose.remote.yml -f deploy/remote/mailer.override.yml config --quiet
