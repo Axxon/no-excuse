@@ -8,7 +8,7 @@ Exemple SMTP :
 
 ```dotenv
 MAIL_MAILER=smtp
-MAIL_SCHEME=tls
+MAIL_SCHEME=smtp
 MAIL_HOST=smtp.example.com
 MAIL_PORT=587
 MAIL_USERNAME=change-me
@@ -16,6 +16,25 @@ MAIL_PASSWORD=change-me
 MAIL_FROM_ADDRESS=recrutement@example.com
 MAIL_FROM_NAME="Équipe recrutement"
 ```
+
+Avec le port `587`, Symfony Mailer négocie automatiquement STARTTLS à partir du schéma `smtp`. Le schéma `smtps` est réservé au TLS implicite, généralement sur le port `465`.
+
+### Démo distante avec Brevo
+
+Le helper `deploy/remote/configure-brevo-secret.sh` demande l’identifiant SMTP, la clé et l’expéditeur sans afficher la clé. Il écrit uniquement dans `~/.config/no-excuse/mailer.env`, avec des permissions `600`. Ce fichier ne doit jamais être ajouté à Git.
+
+Pour appliquer ce secret à une composition distante déjà générée, ajoutez le fichier d’environnement protégé et l’override versionné :
+
+```bash
+docker compose \
+  --env-file /chemin/vers/.env \
+  --env-file ~/.config/no-excuse/mailer.env \
+  -f /chemin/vers/docker-compose.yml \
+  -f deploy/remote/mailer.override.yml \
+  up -d --force-recreate api queue-notifications scheduler
+```
+
+L’override ne contient aucun secret. Il active le SMTP uniquement pour l’API, le worker de notifications et le scheduler. Le profil reste indépendant de l’hébergeur.
 
 Rechargez les services (`make restart`), puis vérifiez sans afficher aucun secret :
 

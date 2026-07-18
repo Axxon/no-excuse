@@ -1,0 +1,17 @@
+services:
+  api: &smtp
+    environment:
+      MAIL_MAILER: smtp
+      MAIL_SCHEME: ${MAIL_SCHEME:-smtp}
+      MAIL_HOST: ${MAIL_HOST:-smtp-relay.brevo.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-no-excuse}
+
+  queue-notifications:
+    <<: *smtp
+
+  scheduler:
+    <<: *smtp
