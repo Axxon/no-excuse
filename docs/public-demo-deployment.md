@@ -1,5 +1,7 @@
 # Déployer la démo publique
 
+[English](public-demo-deployment.en.md) · Français
+
 Cette composition est distincte d’une installation d’entreprise. Elle ne traite que les CV fictifs inclus dans le dépôt et force `NO_EXCUSE_AI_MODE=demo`.
 
 ## Préparer le serveur
@@ -44,6 +46,8 @@ La réponse publique doit indiquer `enabled: true`. Depuis la page principale, *
 - le scheduler exécute `demo:prune` toutes les quinze minutes ;
 - les sandboxes expirent après quatre heures par défaut ;
 - `NO_EXCUSE_DEMO_MAX_SESSIONS` borne les espaces actifs ;
+- la valeur par défaut est `3`; les visiteurs supplémentaires rejoignent volontairement la liste d’attente ;
+- avec `MAIL_MAILER=log`, aucune alerte ne quitte le serveur ; configurez un vrai transport selon le [guide e-mail](email.md) pour activer les alertes de disponibilité ;
 - les volumes PostgreSQL et CV ne sont jamais partagés avec une instance d’entreprise.
 
 Pour une mise à jour, récupérez le nouveau commit privé puis relancez `make demo-prod-deploy`. Ne supprimez pas les volumes pendant une mise à jour ordinaire.

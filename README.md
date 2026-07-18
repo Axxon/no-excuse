@@ -1,5 +1,7 @@
 # no-excuse
 
+[English](README.en.md) · Français
+
 ```mermaid
 sequenceDiagram
     actor C as Candidat
@@ -46,6 +48,9 @@ SaaS open source de traitement responsable des candidatures. Une entreprise inst
 - choix indépendant du fournisseur et du modèle pour les deux étapes IA ;
 - prompts de filtrage et de scoring préremplis, puis modifiables par l’entreprise ;
 - concurrence de 1 à 10 workers par étape, ajustée automatiquement à chaud.
+- purge du fichier CV après notification d’un rejet, avec conservation de la trace d’audit ;
+- lecteur PDF intégré MIT, sans onglet `blob:` ;
+- démo à capacité bornée avec liste d’attente e-mail opt-in.
 
 ## Stack actuelle
 
@@ -89,7 +94,7 @@ POST /api/v1/intake/{offer_uuid}/applications
 Authorization: Bearer {one_time_ingestion_key}
 ```
 
-Le service source envoie un formulaire multipart avec `source`, `external_reference`, `candidate_name`, `candidate_email`, `cv` et éventuellement `cover_letter`. Consultez le [guide d’intégration](docs/integration-api.md) et le [contrat OpenAPI](docs/openapi.yaml).
+Le service source envoie un formulaire multipart avec `source`, `external_reference`, `candidate_name`, `candidate_email`, `cv` et éventuellement `cover_letter`. Consultez le [guide LinkedIn](docs/linkedin.md), le [guide d’intégration](docs/integration-api.md) et le [contrat OpenAPI](docs/openapi.yaml).
 
 > LinkedIn ne propose pas un webhook universel ouvert pour toutes les candidatures. La compatibilité repose sur ce contrat générique : un connecteur LinkedIn autorisé, un ATS partenaire ou une automatisation côté site carrière traduit l’événement vers l’API no-excuse.
 
@@ -117,7 +122,7 @@ Les valeurs « filtrages simultanés » et « analyses simultanées » pilotent 
 
 Le mode public optionnel crée une sandbox logique dédiée à chaque visiteur. Elle contient une entreprise temporaire, un compte RH et 20 CV entièrement fictifs. Les vraies queues filtrent et scorent progressivement les candidatures avec l’analyseur déterministe local ; le visiteur peut ensuite produire le top 10, lire les CV, annoter, réordonner et sélectionner.
 
-La démo publique n’accepte aucun CV externe, n’appelle aucun fournisseur payant et ne transmet aucun e-mail. Chaque sandbox possède son propre UUID d’organisation et ses propres jetons Sanctum. Elle est supprimée avec ses fichiers après quatre heures par défaut, ou immédiatement lors de son nettoyage programmé.
+La démo publique n’accepte aucun CV externe, n’appelle aucun fournisseur payant et ne transmet aucun e-mail candidat. Chaque sandbox possède son propre UUID d’organisation et ses propres jetons Sanctum. Elle est supprimée avec ses fichiers après quatre heures par défaut. Trois sandboxes simultanées sont autorisées par défaut ; une liste d’attente opt-in peut envoyer un unique e-mail de disponibilité.
 
 Le déploiement VPS dédié utilise `compose.demo.yml` : PostgreSQL, Redis, l’API et les workers ne publient aucun port. Seul le proxy web écoute sur `DEMO_HTTP_PORT`. Consultez [le guide de déploiement de la démo](docs/public-demo-deployment.md).
 
@@ -139,6 +144,8 @@ Les tests backend s’exécutent dans un projet Docker isolé avec SQLite en mé
 - en mode `live`, le texte du CV quitte l’infrastructure vers les fournisseurs choisis : un accord de traitement des données et une politique de rétention restent indispensables avant production.
 
 Voir aussi [SECURITY.md](SECURITY.md) et [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Guides : [e-mail](docs/email.md) · [rétention](docs/data-retention.md) · [démo publique](docs/public-demo-deployment.md) · [licence et mentions](docs/legal.md).
 
 ## Licence
 

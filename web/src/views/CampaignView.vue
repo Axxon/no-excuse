@@ -4,10 +4,12 @@ import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { API_URL, apiRequest, type CandidateApplication, type Offer } from '../api'
 import { useAuthStore } from '../stores/auth'
+import CvViewer from '../components/CvViewer.vue'
 
 const route = useRoute(); const { t } = useI18n(); const auth = useAuthStore(); const uuid = String(route.params.uuid)
 const offer = ref<Offer | null>(null); const applications = ref<CandidateApplication[]>([]); const error = ref(''); const closingDate = ref(''); const busy = ref(false)
 const ingestionKey = ref('')
+const cvViewer = ref<{ blob: Blob; name: string; text: string | null } | null>(null)
 const pending = computed(() => applications.value.filter(item => ['received', 'screening', 'qualified', 'scoring'].includes(item.status)).length)
 let poller: number | undefined
 async function load(): Promise<void> {
@@ -24,8 +26,9 @@ async function openCampaign(): Promise<void> { await action(`/offers/${uuid}/ope
 async function closeCampaign(): Promise<void> { await action(`/offers/${uuid}/close`) }
 async function openCv(application: CandidateApplication): Promise<void> {
   const response = await fetch(`${API_URL}/applications/${application.uuid}/cv`, { headers: { Authorization: `Bearer ${auth.token}` } })
-  if (!response.ok) return
-  const url = URL.createObjectURL(await response.blob()); window.open(url, '_blank', 'noopener,noreferrer'); window.setTimeout(() => URL.revokeObjectURL(url), 60000)
+  if (!response.ok) { error.value = response.status === 410 ? t('campaign.cvDeleted') : t('common.error'); return }
+  const blob = await response.blob(); const name = application.cv_original_name ?? 'CV'; const isPdf = blob.type === 'application/pdf' || name.toLowerCase().endsWith('.pdf')
+  cvViewer.value = { blob, name, text: isPdf ? null : await blob.text() }
   await load()
 }
 async function addNote(application: CandidateApplication): Promise<void> {
@@ -67,10 +70,11 @@ async function rotateIngestionKey(): Promise<void> {
           <p v-if="application.ai_summary" class="summary">{{ application.ai_summary }}</p><div v-if="application.score_breakdown" class="score-bars"><div v-for="(value, key) in application.score_breakdown" :key="key"><span>{{ key }}</span><progress :value="value" max="100" /><strong>{{ value }}</strong></div></div>
           <div v-if="application.annotations.length" class="notes"><p v-for="note in application.annotations" :key="note.uuid">{{ note.body }}</p></div>
           <label class="feedback-field">{{ t('campaign.feedback') }}<textarea v-model="application.candidate_feedback" rows="2" /></label>
-          <div class="actions"><button class="button button-small button-ghost" @click="openCv(application)">{{ t('campaign.viewCv') }}</button><button class="button button-small button-ghost" @click="addNote(application)">{{ t('campaign.addNote') }}</button><button class="button button-small button-ghost" @click="saveFeedback(application)">{{ t('campaign.saveFeedback') }}</button><template v-if="application.status === 'shortlisted'"><button class="icon-button" :aria-label="t('campaign.moveUp')" @click="move(application, -1)">↑</button><button class="icon-button" :aria-label="t('campaign.moveDown')" @click="move(application, 1)">↓</button><button class="button button-small" @click="select(application)">{{ t('campaign.select') }}</button></template></div>
+          <div class="actions"><button class="button button-small button-ghost" :disabled="!application.cv_available" @click="openCv(application)">{{ application.cv_available ? t('campaign.viewCv') : t('campaign.cvDeleted') }}</button><button class="button button-small button-ghost" @click="addNote(application)">{{ t('campaign.addNote') }}</button><button class="button button-small button-ghost" @click="saveFeedback(application)">{{ t('campaign.saveFeedback') }}</button><template v-if="application.status === 'shortlisted'"><button class="icon-button" :aria-label="t('campaign.moveUp')" @click="move(application, -1)">↑</button><button class="icon-button" :aria-label="t('campaign.moveDown')" @click="move(application, 1)">↓</button><button class="button button-small" @click="select(application)">{{ t('campaign.select') }}</button></template></div>
         </div>
         <div class="score"><strong>{{ application.final_score?.toFixed(1) ?? '—' }}</strong><span>{{ t('campaign.score') }}</span></div>
       </article>
     </div>
   </section>
+  <CvViewer v-if="cvViewer" v-bind="cvViewer" @close="cvViewer = null" />
 </template>

@@ -6,6 +6,7 @@ use App\Contracts\CandidateAnalyzer;
 use App\Jobs\ScoreApplication;
 use App\Jobs\ScreenApplication;
 use App\Jobs\SendCandidateDecision;
+use App\Services\ApplicationRetention;
 use App\Services\CvTextExtractor;
 use App\Services\DemoSandbox;
 use App\Services\FinalizeOffer;
@@ -66,7 +67,7 @@ class PublicDemoTest extends TestCase
 
         Mail::fake();
         $application = $offer->applications()->where('status', 'shortlisted')->firstOrFail();
-        (new SendCandidateDecision($application->id))->handle();
+        (new SendCandidateDecision($application->id))->handle(app(ApplicationRetention::class));
         Mail::assertNothingSent();
         $this->assertNotNull($application->fresh()->notified_at);
 

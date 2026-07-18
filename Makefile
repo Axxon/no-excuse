@@ -6,7 +6,7 @@ GROUP_ID := $(shell id -g)
 DEMO_ENV_FILE ?= .env.demo
 DEMO_PROJECT_NAME ?= no-excuse-demo
 
-.PHONY: help setup demo install scaffold scaffold-api scaffold-web upgrade-api runtime-version build up restart down logs composer artisan npm test lint validate remote-config remote-build demo-prod-build demo-prod-up demo-prod-deploy demo-prod-logs demo-prod-ps
+.PHONY: help setup demo install scaffold scaffold-api scaffold-web upgrade-api runtime-version build up restart down logs composer artisan npm mail-test test lint validate remote-config remote-build demo-prod-build demo-prod-up demo-prod-deploy demo-prod-logs demo-prod-ps
 
 help:
 	@echo "no-excuse"
@@ -21,6 +21,7 @@ help:
 	@echo "  make test      Run the backend suite in the isolated test stack"
 	@echo "  make lint      Check PHP formatting and build the typed frontend"
 	@echo "  make validate  Run the complete validation rail"
+	@echo "  make mail-test EMAIL=you@example.com Send a transport test email"
 	@echo "  make remote-config Validate the provider-neutral remote profile"
 	@echo "  make remote-build Build the remote images from the local checkout"
 	@echo "  make demo-prod-deploy Build, migrate and start the isolated public demo"
@@ -88,6 +89,10 @@ artisan:
 
 npm:
 	$(DOCKER) compose exec web npm $(ARGS)
+
+mail-test:
+	@test -n "$(EMAIL)" || { echo "EMAIL is required"; exit 2; }
+	$(DOCKER) compose exec api php artisan mail:test "$(EMAIL)"
 
 test:
 	USER_ID=$(USER_ID) GROUP_ID=$(GROUP_ID) $(DOCKER) compose -p no-excuse-test -f compose.yml -f compose.test.yml run --build --no-deps api

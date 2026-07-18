@@ -1,5 +1,7 @@
 # API d’ingestion
 
+[English](integration-api.en.md) · Français
+
 L’API d’ingestion relie une source externe à un catalogue privé no-excuse. Elle ne permet ni de consulter une offre, ni de lire une candidature.
 
 ## 1. Obtenir les identifiants
@@ -62,3 +64,5 @@ Réponses utiles : `404` pour une URL ou une clé non reconnue, `409` si la camp
 - ne jamais écrire la clé, le CV ou le contenu de la lettre dans les logs ;
 - faire tourner immédiatement la clé après une exposition suspectée ;
 - utiliser une offre distincte et donc une clé distincte par catalogue.
+
+Pour LinkedIn, ne collectez pas les pages par scraping : suivez le [guide LinkedIn](linkedin.md).

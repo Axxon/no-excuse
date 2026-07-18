@@ -16,6 +16,8 @@ class ApplicationResource extends JsonResource
             'source' => $this->source,
             'external_reference' => $this->external_reference,
             'cv_original_name' => $this->cv_original_name,
+            'cv_available' => filled($this->cv_path),
+            'cv_deleted_at' => $this->cv_deleted_at?->toIso8601String(),
             'cover_letter' => $this->cover_letter,
             'status' => $this->status,
             'scope_score' => $this->scope_score,

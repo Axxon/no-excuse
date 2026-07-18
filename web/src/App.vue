@@ -35,6 +35,7 @@ async function resetDemo(): Promise<void> {
       <strong>no-excuse</strong>
       <span>{{ t('footer.promise') }}</span>
       <a href="https://github.com/Axxon/no-excuse" target="_blank" rel="noreferrer">GitHub</a>
+      <RouterLink to="/about">À propos</RouterLink>
     </footer>
   </div>
 </template>

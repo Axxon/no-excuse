@@ -6,6 +6,7 @@ import DashboardView from './views/DashboardView.vue'
 import CampaignView from './views/CampaignView.vue'
 import SetupView from './views/SetupView.vue'
 import SettingsView from './views/SettingsView.vue'
+import AboutView from './views/AboutView.vue'
 import { apiRequest, type SetupStatus } from './api'
 
 export const router = createRouter({
@@ -14,6 +15,7 @@ export const router = createRouter({
     { path: '/', component: HomeView },
     { path: '/setup', component: SetupView },
     { path: '/login', component: LoginView },
+    { path: '/about', component: AboutView },
     { path: '/dashboard', component: DashboardView, meta: { requiresAuth: true } },
     { path: '/dashboard/offers/:uuid', component: CampaignView, meta: { requiresAuth: true } },
     { path: '/settings', component: SettingsView, meta: { requiresAuth: true } },

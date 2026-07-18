@@ -15,3 +15,5 @@ Schedule::call(function (FinalizeOffer $finalize): void {
 })->name('finalize-expired-offers')->everyMinute()->withoutOverlapping();
 
 Schedule::command('demo:prune')->everyFifteenMinutes()->withoutOverlapping();
+Schedule::command('demo:notify-waitlist')->everyFiveMinutes()->withoutOverlapping();
+Schedule::command('applications:apply-retention')->daily()->withoutOverlapping();

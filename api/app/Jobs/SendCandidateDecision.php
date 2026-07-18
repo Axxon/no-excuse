@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Mail\CandidateDecisionMail;
 use App\Models\Application;
+use App\Services\ApplicationRetention;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Mail;
@@ -17,7 +18,7 @@ class SendCandidateDecision implements ShouldQueue
         $this->onQueue('notifications');
     }
 
-    public function handle(): void
+    public function handle(ApplicationRetention $retention): void
     {
         $application = Application::query()->with('offer.organization')->find($this->applicationId);
         if (! $application) {
@@ -32,5 +33,6 @@ class SendCandidateDecision implements ShouldQueue
         Mail::to($application->candidate_email)->send(new CandidateDecisionMail($application));
         $application->update(['notified_at' => now()]);
         $application->events()->create(['type' => 'candidate_notified', 'metadata' => ['status' => $application->status]]);
+        $retention->purgeRejectedCv($application->fresh());
     }
 }

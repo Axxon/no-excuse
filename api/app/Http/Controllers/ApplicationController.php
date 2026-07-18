@@ -29,6 +29,7 @@ class ApplicationController extends Controller
     public function show(Request $request, Application $application): ApplicationResource
     {
         $this->authorizeApplication($request, $application);
+        abort_unless($application->cv_path && Storage::disk('local')->exists($application->cv_path), 410, 'Ce CV a été supprimé conformément à la politique de rétention.');
         $this->markAsRead($application);
 
         return new ApplicationResource($application->fresh()->load('annotations'));

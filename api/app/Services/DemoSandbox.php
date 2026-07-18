@@ -6,6 +6,7 @@ use App\Jobs\ScreenApplication;
 use App\Models\JobOffer;
 use App\Models\Organization;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -16,10 +17,29 @@ class DemoSandbox
     /** @return array{user: User, offer: JobOffer} */
     public function create(): array
     {
-        $this->pruneExpired();
-        if (Organization::query()->where('is_demo', true)->count() >= config('no-excuse.public_demo.max_sessions')) {
-            throw new RuntimeException('Toutes les démonstrations sont occupées. Réessayez dans quelques minutes.');
-        }
+        return Cache::lock('no-excuse:demo-session-capacity', 15)->block(3, function (): array {
+            $this->pruneExpired();
+            if ($this->activeCount() >= $this->maxSessions()) {
+                throw new RuntimeException('Toutes les démonstrations sont occupées. Inscrivez-vous pour être prévenu dès qu’une place se libère.');
+            }
+
+            return $this->createSandbox();
+        });
+    }
+
+    public function activeCount(): int
+    {
+        return Organization::query()->where('is_demo', true)->where('expires_at', '>', now())->count();
+    }
+
+    public function maxSessions(): int
+    {
+        return max(1, (int) config('no-excuse.public_demo.max_sessions'));
+    }
+
+    /** @return array{user: User, offer: JobOffer} */
+    private function createSandbox(): array
+    {
 
         return DB::transaction(function (): array {
             $suffix = Str::lower(Str::random(8));

@@ -16,7 +16,7 @@ class Application extends Model
         'candidate_name', 'candidate_email', 'cv_path', 'cv_original_name', 'cover_letter',
         'source', 'external_reference',
         'status', 'scope_score', 'scope_reason', 'final_score', 'score_breakdown',
-        'ai_summary', 'candidate_feedback', 'recruiter_rank', 'read_at', 'selected_at', 'notified_at', 'status_token_hash',
+        'ai_summary', 'candidate_feedback', 'recruiter_rank', 'read_at', 'selected_at', 'notified_at', 'cv_deleted_at', 'status_token_hash',
     ];
 
     protected $hidden = ['id', 'job_offer_id', 'status_token_hash', 'cv_path'];
@@ -32,7 +32,7 @@ class Application extends Model
     {
         return [
             'scope_score' => 'float', 'final_score' => 'float', 'score_breakdown' => 'array',
-            'read_at' => 'datetime', 'selected_at' => 'datetime', 'notified_at' => 'datetime',
+            'read_at' => 'datetime', 'selected_at' => 'datetime', 'notified_at' => 'datetime', 'cv_deleted_at' => 'datetime',
         ];
     }
 

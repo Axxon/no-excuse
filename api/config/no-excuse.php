@@ -4,10 +4,19 @@ return [
     'public_demo' => [
         'enabled' => (bool) env('NO_EXCUSE_PUBLIC_DEMO', false),
         'lifetime_hours' => (int) env('NO_EXCUSE_DEMO_LIFETIME_HOURS', 4),
-        'max_sessions' => (int) env('NO_EXCUSE_DEMO_MAX_SESSIONS', 100),
+        'max_sessions' => (int) env('NO_EXCUSE_DEMO_MAX_SESSIONS', 3),
         'processing_delay_seconds' => (int) env('NO_EXCUSE_DEMO_PROCESSING_DELAY_SECONDS', 2),
         'screening_workers' => (int) env('NO_EXCUSE_DEMO_SCREENING_WORKERS', 2),
         'scoring_workers' => (int) env('NO_EXCUSE_DEMO_SCORING_WORKERS', 1),
+    ],
+    'retention' => [
+        // Rejected CV files are purged only after the candidate notification succeeds.
+        // The application audit trail remains available to the recruiter.
+        'rejected_cv_days' => (int) env('NO_EXCUSE_REJECTED_CV_RETENTION_DAYS', 0),
+    ],
+    'author' => [
+        'name' => env('NO_EXCUSE_AUTHOR_NAME', 'Project author'),
+        'linkedin_url' => env('NO_EXCUSE_AUTHOR_LINKEDIN_URL'),
     ],
     'ai' => [
         'mode' => env('NO_EXCUSE_AI_MODE', 'demo'),

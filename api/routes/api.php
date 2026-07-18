@@ -11,8 +11,10 @@ use App\Http\Controllers\SetupController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/auth/login', [AuthController::class, 'login']);
+Route::get('/about', [MetaController::class, 'about']);
 Route::get('/demo', [DemoController::class, 'status']);
 Route::post('/demo/sessions', [DemoController::class, 'store'])->middleware('throttle:3,10');
+Route::post('/demo/waitlist', [DemoController::class, 'waitlist'])->middleware('throttle:3,10');
 Route::get('/setup/status', [SetupController::class, 'status']);
 Route::post('/setup', [SetupController::class, 'store'])->middleware('throttle:5,1');
 
