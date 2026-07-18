@@ -1,0 +1,111 @@
+name: no-excuse-demo
+
+x-api: &api
+  build:
+    context: ./api
+    dockerfile: Dockerfile.production
+  restart: unless-stopped
+  environment:
+    APP_NAME: ${APP_NAME:-no-excuse-demo}
+    APP_KEY: ${APP_KEY:?APP_KEY is required}
+    APP_URL: ${APP_URL:?APP_URL is required}
+    APP_ENV: production
+    APP_DEBUG: "false"
+    DB_CONNECTION: pgsql
+    DB_HOST: postgres
+    DB_PORT: 5432
+    DB_DATABASE: no_excuse_demo
+    DB_USERNAME: no_excuse_demo
+    DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+    CACHE_STORE: redis
+    QUEUE_CONNECTION: redis
+    REDIS_CLIENT: predis
+    REDIS_HOST: redis
+    MAIL_MAILER: log
+    NO_EXCUSE_AI_MODE: demo
+    NO_EXCUSE_PUBLIC_DEMO: "true"
+    NO_EXCUSE_DEMO_LIFETIME_HOURS: ${NO_EXCUSE_DEMO_LIFETIME_HOURS:-4}
+    NO_EXCUSE_DEMO_MAX_SESSIONS: ${NO_EXCUSE_DEMO_MAX_SESSIONS:-100}
+    NO_EXCUSE_DEMO_PROCESSING_DELAY_SECONDS: ${NO_EXCUSE_DEMO_PROCESSING_DELAY_SECONDS:-2}
+    NO_EXCUSE_DEMO_SCREENING_WORKERS: ${NO_EXCUSE_DEMO_SCREENING_WORKERS:-2}
+    NO_EXCUSE_DEMO_SCORING_WORKERS: ${NO_EXCUSE_DEMO_SCORING_WORKERS:-1}
+  volumes:
+    - demo-storage:/app/storage
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  networks:
+    - internal
+
+services:
+  api:
+    <<: *api
+
+  queue-intake:
+    <<: *api
+    command: php artisan queue:adaptive screening
+
+  queue-scoring:
+    <<: *api
+    command: php artisan queue:adaptive scoring
+
+  queue-notifications:
+    <<: *api
+    command: php artisan queue:work redis --queue=notifications --sleep=1 --tries=3 --timeout=60
+
+  scheduler:
+    <<: *api
+    command: php artisan schedule:work
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile.production
+      args:
+        VITE_API_URL: /api
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${DEMO_HTTP_PORT:-8088}:8080"
+    depends_on:
+      - api
+    networks:
+      - internal
+
+  postgres:
+    image: postgres:18.4-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: no_excuse_demo
+      POSTGRES_USER: no_excuse_demo
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+    volumes:
+      - demo-postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U no_excuse_demo -d no_excuse_demo"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - internal
+
+  redis:
+    image: redis:8.2-alpine
+    restart: unless-stopped
+    command: redis-server --save "" --appendonly no --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - internal
+
+volumes:
+  demo-storage:
+  demo-postgres:
+
+networks:
+  internal:
+    driver: bridge

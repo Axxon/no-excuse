@@ -30,6 +30,7 @@ class OfferController extends Controller
     public function store(Request $request): JsonResponse
     {
         $this->authorizeCanWrite($request);
+        $this->authorizeNotDemo($request);
         $key = Str::random(64);
         $defaults = $request->user()->organization;
         $validated = $this->validated($request);
@@ -60,6 +61,7 @@ class OfferController extends Controller
     {
         $this->authorizeOwner($request, $offer);
         $this->authorizeCanWrite($request);
+        $this->authorizeNotDemo($request);
         abort_if($offer->status === 'selection_made', 409, 'Cette campagne est terminée.');
         $offer->update($this->validated($request));
 
@@ -70,6 +72,7 @@ class OfferController extends Controller
     {
         $this->authorizeOwner($request, $offer);
         $this->authorizeCanWrite($request);
+        $this->authorizeNotDemo($request);
         $request->validate(['closes_at' => ['required', 'date', 'after:now']]);
         $offer->update(['status' => 'open', 'opens_at' => now(), 'closes_at' => $request->date('closes_at')]);
 
@@ -80,6 +83,11 @@ class OfferController extends Controller
     {
         $this->authorizeOwner($request, $offer);
         $this->authorizeCanWrite($request);
+        abort_if(
+            $offer->applications()->whereIn('status', ['received', 'screening', 'qualified', 'scoring'])->exists(),
+            409,
+            'Attendez la fin des analyses avant de produire le top 10.',
+        );
         $finalize->handle($offer);
 
         return new OfferResource($offer->fresh()->loadCount('applications'));
@@ -89,6 +97,7 @@ class OfferController extends Controller
     {
         $this->authorizeOwner($request, $offer);
         $this->authorizeCanWrite($request);
+        $this->authorizeNotDemo($request);
         abort_if($offer->status === 'selection_made', 409, 'Cette campagne est terminée.');
 
         $key = Str::random(64);
@@ -129,5 +138,10 @@ class OfferController extends Controller
     private function authorizeCanWrite(Request $request): void
     {
         abort_if($request->user()->role === 'viewer', 403, 'Ce compte est en lecture seule.');
+    }
+
+    private function authorizeNotDemo(Request $request): void
+    {
+        abort_if($request->user()->organization->is_demo, 403, 'La sandbox utilise uniquement sa campagne fictive préchargée.');
     }
 }

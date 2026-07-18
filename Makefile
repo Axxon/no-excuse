@@ -3,8 +3,10 @@ SHELL := /bin/sh
 DOCKER ?= docker
 USER_ID := $(shell id -u)
 GROUP_ID := $(shell id -g)
+DEMO_ENV_FILE ?= .env.demo
+DEMO_PROJECT_NAME ?= no-excuse-demo
 
-.PHONY: help setup demo install scaffold scaffold-api scaffold-web upgrade-api runtime-version build up restart down logs composer artisan npm test lint validate
+.PHONY: help setup demo install scaffold scaffold-api scaffold-web upgrade-api runtime-version build up restart down logs composer artisan npm test lint validate demo-prod-build demo-prod-up demo-prod-deploy demo-prod-logs demo-prod-ps
 
 help:
 	@echo "no-excuse"
@@ -19,6 +21,7 @@ help:
 	@echo "  make test      Run the backend suite in the isolated test stack"
 	@echo "  make lint      Check PHP formatting and build the typed frontend"
 	@echo "  make validate  Run the complete validation rail"
+	@echo "  make demo-prod-deploy Build, migrate and start the isolated public demo"
 
 setup: build install up
 	$(DOCKER) compose exec api php artisan migrate --force
@@ -92,3 +95,19 @@ lint:
 	$(DOCKER) compose exec web npm run build
 
 validate: test lint
+
+demo-prod-build:
+	$(DOCKER) compose -p $(DEMO_PROJECT_NAME) --env-file $(DEMO_ENV_FILE) -f compose.demo.yml build
+
+demo-prod-up:
+	$(DOCKER) compose -p $(DEMO_PROJECT_NAME) --env-file $(DEMO_ENV_FILE) -f compose.demo.yml up -d
+
+demo-prod-deploy: demo-prod-build demo-prod-up
+	$(DOCKER) compose -p $(DEMO_PROJECT_NAME) --env-file $(DEMO_ENV_FILE) -f compose.demo.yml exec api php artisan migrate --force
+	$(DOCKER) compose -p $(DEMO_PROJECT_NAME) --env-file $(DEMO_ENV_FILE) -f compose.demo.yml exec api php artisan optimize
+
+demo-prod-logs:
+	$(DOCKER) compose -p $(DEMO_PROJECT_NAME) --env-file $(DEMO_ENV_FILE) -f compose.demo.yml logs -f api queue-intake queue-scoring scheduler web
+
+demo-prod-ps:
+	$(DOCKER) compose -p $(DEMO_PROJECT_NAME) --env-file $(DEMO_ENV_FILE) -f compose.demo.yml ps

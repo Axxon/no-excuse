@@ -13,11 +13,12 @@ class SetupController extends Controller
 {
     public function status(): JsonResponse
     {
-        return response()->json(['configured' => User::query()->exists()]);
+        return response()->json(['configured' => config('no-excuse.public_demo.enabled') || User::query()->exists()]);
     }
 
     public function store(Request $request): JsonResponse
     {
+        abort_if(config('no-excuse.public_demo.enabled'), 403, 'Cette instance est réservée aux démonstrations éphémères.');
         abort_if(User::query()->exists(), 409, 'Cette instance est déjà configurée.');
         $data = $request->validate([
             'company_name' => ['required', 'string', 'max:160'],

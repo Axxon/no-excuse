@@ -18,6 +18,7 @@ class OrganizationController extends Controller
     public function update(Request $request): JsonResponse
     {
         abort_unless($request->user()->canManageTeam(), 403);
+        abort_if($request->user()->organization->is_demo, 403, 'Les réglages de la sandbox sont verrouillés.');
         $providers = array_keys(config('no-excuse.ai.providers'));
         $data = $request->validate([
             'name' => ['required', 'string', 'max:160'],
@@ -48,6 +49,7 @@ class OrganizationController extends Controller
     public function storeMember(Request $request): JsonResponse
     {
         abort_unless($request->user()->canManageTeam(), 403);
+        abort_if($request->user()->organization->is_demo, 403, 'La démonstration ne crée pas de comptes permanents.');
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],

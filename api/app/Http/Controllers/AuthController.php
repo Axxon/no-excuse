@@ -49,7 +49,12 @@ class AuthController extends Controller
             'name' => $user->name,
             'email' => $user->email,
             'role' => $user->role,
-            'organization' => $user->organization ? ['uuid' => $user->organization->public_id, 'name' => $user->organization->name] : null,
+            'organization' => $user->organization ? [
+                'uuid' => $user->organization->public_id,
+                'name' => $user->organization->name,
+                'is_demo' => $user->organization->is_demo,
+                'expires_at' => $user->organization->expires_at?->toIso8601String(),
+            ] : null,
         ];
     }
 }

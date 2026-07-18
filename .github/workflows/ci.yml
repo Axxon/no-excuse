@@ -21,3 +21,5 @@ jobs:
         run: make up
       - name: Validate backend and frontend
         run: make validate
+      - name: Build isolated public demo images
+        run: make demo-prod-build DEMO_ENV_FILE=.env.demo.example

@@ -59,6 +59,12 @@ class RunAdaptiveQueue extends Command
 
     private function desiredWorkers(string $field): int
     {
+        if (config('no-excuse.public_demo.enabled')) {
+            $demoField = $field === 'screening_workers' ? 'screening_workers' : 'scoring_workers';
+
+            return max(1, min(10, (int) config('no-excuse.public_demo.'.$demoField, 1)));
+        }
+
         try {
             return max(1, min(10, (int) (Organization::query()->value($field) ?? 1)));
         } catch (Throwable) {

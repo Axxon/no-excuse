@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { apiRequest, type AuthPayload, type User } from '../api'
+import { apiRequest, type AuthPayload, type DemoSessionPayload, type User } from '../api'
 
 const storedToken = localStorage.getItem('no-excuse-token') ?? ''
 
@@ -23,6 +23,12 @@ export const useAuthStore = defineStore('auth', () => {
     accept(await apiRequest<AuthPayload>('/setup', { method: 'POST', body: JSON.stringify({ company_name: companyName, name, email, password, password_confirmation: password }) }))
   }
 
+  async function startDemo(): Promise<string> {
+    const payload = await apiRequest<DemoSessionPayload>('/demo/sessions', { method: 'POST' })
+    accept(payload)
+    return payload.demo.offer_uuid
+  }
+
   async function loadUser(): Promise<void> {
     if (!token.value || user.value) return
     const payload = await apiRequest<{ user: User }>('/auth/me', {}, token.value)
@@ -36,5 +42,5 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('no-excuse-token')
   }
 
-  return { token, user, isAuthenticated, login, setup, loadUser, logout }
+  return { token, user, isAuthenticated, login, setup, startDemo, loadUser, logout }
 })

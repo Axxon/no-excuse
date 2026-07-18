@@ -19,7 +19,16 @@ class SendCandidateDecision implements ShouldQueue
 
     public function handle(): void
     {
-        $application = Application::query()->with('offer')->findOrFail($this->applicationId);
+        $application = Application::query()->with('offer.organization')->find($this->applicationId);
+        if (! $application) {
+            return;
+        }
+        if ($application->offer->organization?->is_demo) {
+            $application->update(['notified_at' => now()]);
+            $application->events()->create(['type' => 'candidate_notification_previewed', 'metadata' => ['status' => $application->status]]);
+
+            return;
+        }
         Mail::to($application->candidate_email)->send(new CandidateDecisionMail($application));
         $application->update(['notified_at' => now()]);
         $application->events()->create(['type' => 'candidate_notified', 'metadata' => ['status' => $application->status]]);

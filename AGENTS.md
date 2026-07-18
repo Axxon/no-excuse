@@ -9,3 +9,5 @@
 - Ne jamais exposer les identifiants SQL ; utiliser les UUID publics.
 - Toute évolution de l’ingestion met à jour `docs/integration-api.md` et ses tests.
 - La sélection finale reste humaine et les critères sensibles ou discriminatoires sont interdits.
+- La démo publique n’accepte que les 20 CV fictifs fournis, ne contacte aucune IA payante et ne transmet aucun e-mail réel.
+- Une sandbox de démo est isolée par organisation, expire automatiquement et ne doit jamais donner accès au socket Docker.

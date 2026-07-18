@@ -113,6 +113,14 @@ La configuration de l’entreprise contient deux prompts de base responsables : 
 
 Les valeurs « filtrages simultanés » et « analyses simultanées » pilotent de vrais processus de queue. Les superviseurs applicatifs ajoutent ou retirent les workers non-root environ cinq secondes après l’enregistrement, sans exposer le socket Docker à l’application.
 
+## Démo publique sans coût IA
+
+Le mode public optionnel crée une sandbox logique dédiée à chaque visiteur. Elle contient une entreprise temporaire, un compte RH et 20 CV entièrement fictifs. Les vraies queues filtrent et scorent progressivement les candidatures avec l’analyseur déterministe local ; le visiteur peut ensuite produire le top 10, lire les CV, annoter, réordonner et sélectionner.
+
+La démo publique n’accepte aucun CV externe, n’appelle aucun fournisseur payant et ne transmet aucun e-mail. Chaque sandbox possède son propre UUID d’organisation et ses propres jetons Sanctum. Elle est supprimée avec ses fichiers après quatre heures par défaut, ou immédiatement lors de son nettoyage programmé.
+
+Le déploiement VPS dédié utilise `compose.demo.yml` : PostgreSQL, Redis, l’API et les workers ne publient aucun port. Seul le proxy web écoute sur `DEMO_HTTP_PORT`. Consultez [le guide de déploiement de la démo](docs/public-demo-deployment.md).
+
 ## Validation
 
 ```bash

@@ -13,6 +13,8 @@ class IntegrationIntakeController extends Controller
 {
     public function __invoke(Request $request, JobOffer $offer): JsonResponse
     {
+        $offer->loadMissing('organization');
+        abort_if($offer->organization?->is_demo, 403, 'La démonstration accepte uniquement ses CV fictifs préchargés.');
         $providedKey = $request->bearerToken();
         abort_unless(
             is_string($providedKey)

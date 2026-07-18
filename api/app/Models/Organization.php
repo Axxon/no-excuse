@@ -18,6 +18,7 @@ class Organization extends Model
         'default_screening_provider', 'default_screening_model',
         'default_scoring_provider', 'default_scoring_model',
         'screening_workers', 'scoring_workers', 'screening_prompt', 'scoring_prompt',
+        'is_demo', 'expires_at',
     ];
 
     protected $hidden = ['id'];
@@ -31,7 +32,12 @@ class Organization extends Model
 
     protected function casts(): array
     {
-        return ['screening_workers' => 'integer', 'scoring_workers' => 'integer'];
+        return [
+            'screening_workers' => 'integer',
+            'scoring_workers' => 'integer',
+            'is_demo' => 'boolean',
+            'expires_at' => 'datetime',
+        ];
     }
 
     public function users(): HasMany

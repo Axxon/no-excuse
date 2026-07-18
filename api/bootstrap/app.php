@@ -14,6 +14,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo(fn (): ?string => null);
+        if (filter_var(env('NO_EXCUSE_PUBLIC_DEMO', false), FILTER_VALIDATE_BOOL)) {
+            // The demo API is reachable only through its internal Nginx service.
+            $middleware->trustProxies(at: '*');
+        }
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

@@ -1,6 +1,8 @@
 .env
+.env.demo
 .env.*
 !.env.example
+!.env.demo.example
 .idea/
 .vscode/
 api/vendor/

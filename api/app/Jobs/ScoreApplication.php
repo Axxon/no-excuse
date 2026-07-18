@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Contracts\CandidateAnalyzer;
 use App\Models\Application;
 use App\Services\CvTextExtractor;
+use App\Services\DemoCandidateAnalyzer;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Throwable;
@@ -24,13 +25,17 @@ class ScoreApplication implements ShouldQueue
 
     public function handle(CandidateAnalyzer $analyzer, CvTextExtractor $extractor): void
     {
-        $application = Application::query()->with('offer')->findOrFail($this->applicationId);
+        $application = Application::query()->with('offer.organization')->find($this->applicationId);
+        if (! $application) {
+            return;
+        }
         if (! in_array($application->status, ['qualified', 'scoring', 'processing_failed'], true)) {
             return;
         }
 
         $application->update(['status' => 'scoring']);
-        $result = $analyzer->score($application->offer, $extractor->extract($application->cv_path));
+        $selectedAnalyzer = $application->offer->organization?->is_demo ? app(DemoCandidateAnalyzer::class) : $analyzer;
+        $result = $selectedAnalyzer->score($application->offer, $extractor->extract($application->cv_path));
         $application->update([
             'status' => 'scored',
             'final_score' => $result->score,

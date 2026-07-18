@@ -1,0 +1,10 @@
+.env
+.env.*
+vendor
+storage/app/private/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+tests
+phpunit.xml

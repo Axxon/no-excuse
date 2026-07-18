@@ -1,6 +1,19 @@
 <script setup lang="ts">
+import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { apiRequest, type DemoStatus } from '../api'
+import { useAuthStore } from '../stores/auth'
+
 const { t } = useI18n()
+const router = useRouter(); const auth = useAuthStore(); const demo = ref<DemoStatus | null>(null); const starting = ref(false); const error = ref('')
+onMounted(async () => { try { demo.value = await apiRequest<DemoStatus>('/demo') } catch { demo.value = null } })
+async function startDemo(): Promise<void> {
+  starting.value = true; error.value = ''
+  try { const offerUuid = await auth.startDemo(); await router.push(`/dashboard/offers/${offerUuid}`) }
+  catch (caught) { error.value = caught instanceof Error ? caught.message : t('common.error') }
+  finally { starting.value = false }
+}
 </script>
 
 <template>
@@ -10,9 +23,12 @@ const { t } = useI18n()
       <h1>{{ t('home.title') }}</h1>
       <p class="hero-lead">{{ t('home.lead') }}</p>
       <div class="actions">
-        <RouterLink class="button" to="/login">{{ t('home.recruiterCta') }}</RouterLink>
+        <button v-if="demo?.enabled" class="button" :disabled="starting" @click="startDemo">{{ starting ? t('home.demoStarting') : t('home.demoCta') }}</button>
+        <RouterLink class="button button-ghost" to="/login">{{ t('home.recruiterCta') }}</RouterLink>
         <a class="button button-ghost" href="https://github.com/Axxon/no-excuse" target="_blank" rel="noreferrer">{{ t('home.integrationCta') }}</a>
       </div>
+      <p v-if="demo?.enabled" class="demo-promise">{{ t('home.demoPromise', { count: demo.candidate_count, hours: demo.lifetime_hours }) }}</p>
+      <p v-if="error" class="alert">{{ error }}</p>
     </div>
     <div class="hero-visual" aria-hidden="true">
       <div class="signal-card signal-card-main"><span>94</span><small>match</small></div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { API_URL, apiRequest, type CandidateApplication, type Offer } from '../api'
@@ -8,11 +8,17 @@ import { useAuthStore } from '../stores/auth'
 const route = useRoute(); const { t } = useI18n(); const auth = useAuthStore(); const uuid = String(route.params.uuid)
 const offer = ref<Offer | null>(null); const applications = ref<CandidateApplication[]>([]); const error = ref(''); const closingDate = ref(''); const busy = ref(false)
 const ingestionKey = ref('')
+const pending = computed(() => applications.value.filter(item => ['received', 'screening', 'qualified', 'scoring'].includes(item.status)).length)
+let poller: number | undefined
 async function load(): Promise<void> {
   const [offerPayload, applicationPayload] = await Promise.all([apiRequest<{ data: Offer }>(`/offers/${uuid}`, {}, auth.token), apiRequest<{ data: CandidateApplication[] }>(`/offers/${uuid}/applications`, {}, auth.token)])
   offer.value = offerPayload.data; applications.value = applicationPayload.data
 }
-onMounted(async () => { try { await load() } catch (caught) { error.value = caught instanceof Error ? caught.message : t('common.error') } })
+onMounted(async () => {
+  try { await load() } catch (caught) { error.value = caught instanceof Error ? caught.message : t('common.error') }
+  if (auth.user?.organization?.is_demo) poller = window.setInterval(() => void load(), 2000)
+})
+onUnmounted(() => { if (poller) window.clearInterval(poller) })
 async function action(path: string, body?: object): Promise<void> { busy.value = true; error.value = ''; try { await apiRequest(path, { method: 'POST', body: body ? JSON.stringify(body) : undefined }, auth.token); await load() } catch (caught) { error.value = caught instanceof Error ? caught.message : t('common.error') } finally { busy.value = false } }
 async function openCampaign(): Promise<void> { await action(`/offers/${uuid}/open`, { closes_at: new Date(closingDate.value).toISOString() }) }
 async function closeCampaign(): Promise<void> { await action(`/offers/${uuid}/close`) }
@@ -44,14 +50,15 @@ async function rotateIngestionKey(): Promise<void> {
   <section v-if="offer" class="page-section campaign-heading">
     <div><span class="status" :class="`status-${offer.status}`">{{ t(`status.${offer.status}`) }}</span><h1>{{ offer.title }}</h1><p>{{ offer.company }} · {{ offer.location }}</p></div>
     <div v-if="offer.status === 'draft'" class="inline-form"><input v-model="closingDate" type="datetime-local" /><button class="button button-small" :disabled="busy || !closingDate" @click="openCampaign">{{ t('campaign.open') }}</button></div>
-    <button v-if="offer.status === 'open'" class="button button-small" :disabled="busy" @click="closeCampaign">{{ t('campaign.close') }}</button>
+    <button v-if="offer.status === 'open'" class="button button-small" :disabled="busy || pending > 0" @click="closeCampaign">{{ pending > 0 ? t('demo.processingCount', { count: pending }) : t('campaign.close') }}</button>
   </section>
-  <section v-if="offer" class="page-section integration-card">
+  <section v-if="offer && !auth.user?.organization?.is_demo" class="page-section integration-card">
     <div><span class="eyebrow">{{ t('campaign.integration') }}</span><h2>{{ t('campaign.integrationLead') }}</h2></div>
     <label>{{ t('dashboard.endpoint') }}<code>{{ offer.intake_url }}</code></label>
     <label v-if="ingestionKey">{{ t('dashboard.secret') }}<code>{{ ingestionKey }}</code><small>{{ t('dashboard.integrationWarning') }}</small></label>
     <button class="button button-small button-ghost" :disabled="busy" @click="rotateIngestionKey">{{ t('campaign.rotateKey') }}</button>
   </section>
+  <section v-if="offer && auth.user?.organization?.is_demo" class="page-section demo-guide"><div><span class="eyebrow">{{ t('demo.fictional') }}</span><h2>{{ pending > 0 ? t('demo.analysisRunning') : t('demo.analysisReady') }}</h2><p>{{ t('demo.guide') }}</p></div><strong>{{ applications.length - pending }} / {{ applications.length }}</strong></section>
   <section class="page-section"><p v-if="error" class="alert">{{ error }}</p><p v-if="!offer">{{ t('common.loading') }}</p><p v-else-if="applications.length === 0">{{ t('campaign.empty') }}</p>
     <div class="application-list">
       <article v-for="application in applications" :key="application.uuid" class="application-card" :class="{ shortlisted: application.status === 'shortlisted', unread: !application.read_at }">

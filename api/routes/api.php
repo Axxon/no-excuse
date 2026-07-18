@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DemoController;
 use App\Http\Controllers\IntegrationIntakeController;
 use App\Http\Controllers\MetaController;
 use App\Http\Controllers\OfferController;
@@ -10,14 +11,17 @@ use App\Http\Controllers\SetupController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/auth/login', [AuthController::class, 'login']);
+Route::get('/demo', [DemoController::class, 'status']);
+Route::post('/demo/sessions', [DemoController::class, 'store'])->middleware('throttle:3,10');
 Route::get('/setup/status', [SetupController::class, 'status']);
 Route::post('/setup', [SetupController::class, 'store'])->middleware('throttle:5,1');
 
 Route::post('/v1/intake/{offer:public_id}/applications', IntegrationIntakeController::class)
     ->middleware('throttle:60,1');
 
-Route::middleware('auth:sanctum')->group(function (): void {
+Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function (): void {
     Route::get('/meta/ai-providers', [MetaController::class, 'aiProviders']);
+    Route::post('/demo/reset', [DemoController::class, 'reset'])->middleware('throttle:5,10');
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/organization', [OrganizationController::class, 'show']);
