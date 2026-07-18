@@ -39,11 +39,15 @@ services:
 
   queue-intake:
     <<: *api
-    command: php artisan queue:work redis --queue=candidate-intake,notifications --sleep=1 --tries=3
+    command: php artisan queue:adaptive screening
+
+  queue-notifications:
+    <<: *api
+    command: php artisan queue:work redis --queue=notifications --sleep=1 --tries=3
 
   queue-scoring:
     <<: *api
-    command: php artisan queue:work redis --queue=candidate-scoring --sleep=1 --tries=3
+    command: php artisan queue:adaptive scoring
 
   scheduler:
     <<: *api

@@ -19,8 +19,8 @@ export const useAuthStore = defineStore('auth', () => {
     accept(await apiRequest<AuthPayload>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }))
   }
 
-  async function register(name: string, email: string, password: string): Promise<void> {
-    accept(await apiRequest<AuthPayload>('/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password, password_confirmation: password }) }))
+  async function setup(companyName: string, name: string, email: string, password: string): Promise<void> {
+    accept(await apiRequest<AuthPayload>('/setup', { method: 'POST', body: JSON.stringify({ company_name: companyName, name, email, password, password_confirmation: password }) }))
   }
 
   async function loadUser(): Promise<void> {
@@ -36,5 +36,5 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('no-excuse-token')
   }
 
-  return { token, user, isAuthenticated, login, register, loadUser, logout }
+  return { token, user, isAuthenticated, login, setup, loadUser, logout }
 })

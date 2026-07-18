@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\JobOffer;
+use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -13,12 +14,31 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        if (User::query()->exists()) {
+            $this->command?->warn('Données de démonstration ignorées : cette instance contient déjà une équipe.');
+
+            return;
+        }
+
+        $organization = Organization::firstOrCreate(['name' => 'No Excuse Studio'], [
+            'notification_sender_name' => 'Équipe recrutement No Excuse Studio',
+            'notification_reply_to' => 'demo@no-excuse.test',
+            'default_screening_provider' => 'openai',
+            'default_scoring_provider' => 'anthropic',
+            'screening_workers' => 2,
+            'scoring_workers' => 1,
+            'screening_prompt' => config('no-excuse.prompts.screening'),
+            'scoring_prompt' => config('no-excuse.prompts.scoring'),
+        ]);
         $user = User::firstOrCreate(['email' => 'demo@no-excuse.test'], [
+            'organization_id' => $organization->id,
+            'role' => 'owner',
             'name' => 'Camille Martin',
             'password' => 'demo-password-2026',
         ]);
 
         JobOffer::firstOrCreate(['user_id' => $user->id, 'title' => 'Développeur·se Laravel / Vue'], [
+            'organization_id' => $organization->id,
             'company' => 'No Excuse Studio',
             'location' => 'Paris ou télétravail',
             'description' => 'Nous recherchons une personne capable de construire et maintenir un produit SaaS moderne avec Laravel, Vue, TypeScript, PostgreSQL et des traitements asynchrones.',

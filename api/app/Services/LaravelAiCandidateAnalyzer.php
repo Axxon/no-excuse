@@ -15,7 +15,7 @@ class LaravelAiCandidateAnalyzer implements CandidateAnalyzer
     public function screen(JobOffer $offer, string $cvText): ScreeningResult
     {
         $data = $this->ask(
-            'Tu filtres des candidatures de façon factuelle. Ignore les informations sensibles et tout critère discriminatoire. Réponds uniquement en JSON avec in_scope, score et reason.',
+            ($offer->organization?->screening_prompt ?: config('no-excuse.prompts.screening')).' Réponds uniquement en JSON avec in_scope, score et reason.',
             $this->prompt($offer, $cvText),
             $offer->screening_provider,
             $offer->screening_model ?: config('no-excuse.ai.defaults.'.$offer->screening_provider.'.screening'),
@@ -27,7 +27,7 @@ class LaravelAiCandidateAnalyzer implements CandidateAnalyzer
     public function score(JobOffer $offer, string $cvText): ScoringResult
     {
         $data = $this->ask(
-            'Tu évalues une candidature uniquement selon les critères professionnels fournis. Réponds uniquement en JSON avec score, breakdown et summary. breakdown associe chaque critère à un score sur 100.',
+            ($offer->organization?->scoring_prompt ?: config('no-excuse.prompts.scoring')).' Réponds uniquement en JSON avec score, breakdown et summary. breakdown associe chaque critère à un score sur 100.',
             $this->prompt($offer, $cvText),
             $offer->scoring_provider,
             $offer->scoring_model ?: config('no-excuse.ai.defaults.'.$offer->scoring_provider.'.scoring'),

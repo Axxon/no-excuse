@@ -16,6 +16,7 @@ const auth = useAuthStore()
       </RouterLink>
       <nav class="main-nav" :aria-label="t('nav.main')">
         <RouterLink v-if="auth.isAuthenticated" to="/dashboard">{{ t('nav.dashboard') }}</RouterLink>
+        <RouterLink v-if="auth.isAuthenticated" to="/settings">{{ t('nav.settings') }}</RouterLink>
         <RouterLink v-else class="button button-small button-ghost" to="/login">{{ t('nav.recruiter') }}</RouterLink>
       </nav>
     </header>

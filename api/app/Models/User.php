@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -33,6 +34,8 @@ class User extends Authenticatable
         'email',
         'password',
         'public_id',
+        'organization_id',
+        'role',
     ];
 
     /**
@@ -62,5 +65,15 @@ class User extends Authenticatable
     public function jobOffers(): HasMany
     {
         return $this->hasMany(JobOffer::class);
+    }
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
+    }
+
+    public function canManageTeam(): bool
+    {
+        return in_array($this->role, ['owner', 'admin'], true);
     }
 }

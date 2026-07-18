@@ -9,7 +9,7 @@ sequenceDiagram
     participant IA1 as IA économique
     participant Q2 as Queue de scoring
     participant IA2 as IA fine
-    actor RH as Espace RH privé
+    actor RH as Équipe RH privée
 
     C->>X: Dépose sa candidature
     X->>API: POST CV + identité + référence externe
@@ -30,11 +30,12 @@ sequenceDiagram
     API-->>C: Décision, score et retour RH optionnel
 ```
 
-SaaS open source de traitement responsable des candidatures. Les offres et leur catalogue ne sont jamais publics : un recruteur crée une campagne privée, puis LinkedIn, un ATS ou un site carrière transmet chaque CV à une API d’ingestion dédiée.
+SaaS open source de traitement responsable des candidatures. Une entreprise installe sa propre instance, ses RH partagent les annonces et leur suivi, puis LinkedIn, un ATS ou un site carrière transmet chaque CV à une API d’ingestion dédiée. Les offres et leur catalogue ne sont jamais publics.
 
 ## Ce que fait le MVP
 
-- catalogue privé de candidatures par offre et accès RH par jeton Sanctum ;
+- espace d’entreprise partagé, équipe RH avec rôles et accès privé par jeton Sanctum ;
+- parcours simple en trois étapes : installation, configuration, première annonce ;
 - clé Bearer distincte et révocable pour chaque offre, affichée une seule fois ;
 - ingestion multipart compatible avec tout connecteur HTTP et déduplication par source/référence externe ;
 - première file avec un modèle économique pour écarter le hors-périmètre ;
@@ -42,7 +43,9 @@ SaaS open source de traitement responsable des candidatures. Les offres et leur 
 - traitement jusqu’à une date de clôture, puis top 10 réordonnable ;
 - lecture des CV historisée, annotations internes et retour candidat optionnel ;
 - sélection humaine finale et notification de tous les autres candidats ;
-- choix indépendant du fournisseur et du modèle pour les deux étapes IA.
+- choix indépendant du fournisseur et du modèle pour les deux étapes IA ;
+- prompts de filtrage et de scoring préremplis, puis modifiables par l’entreprise ;
+- concurrence de 1 à 10 workers par étape, ajustée automatiquement à chaud.
 
 ## Stack actuelle
 
@@ -63,8 +66,17 @@ make setup
 Puis ouvrir :
 
 - interface : http://localhost:5173 ;
-- API : http://localhost:18080/api ;
-- compte de démonstration : `demo@no-excuse.test` / `demo-password-2026`.
+- API : http://localhost:18080/api.
+
+Au premier accès, l’assistant demande seulement le nom de l’entreprise et le compte responsable. L’écran suivant regroupe les e-mails, les IA, la vélocité, les prompts et l’équipe. Le troisième permet de créer la première annonce.
+
+Pour charger des données de démonstration sur une instance vide :
+
+```bash
+make demo
+```
+
+Compte de démonstration : `demo@no-excuse.test` / `demo-password-2026`.
 
 La campagne de démonstration doit recevoir une nouvelle clé depuis son écran d’intégration avant le premier envoi. La clé précédente est révoquée à chaque rotation.
 
@@ -85,7 +97,21 @@ Le service source envoie un formulaire multipart avec `source`, `external_refere
 
 Le mode `demo` est actif par défaut : il est local, gratuit, déterministe et ne transmet aucun CV. Le mode `live` s’active avec `NO_EXCUSE_AI_MODE=live` et la clé du fournisseur concerné.
 
+Les tokens ne sont jamais saisis dans l’interface RH. Le développeur les place dans `api/.env` pour une installation locale, ou dans le gestionnaire de secrets de l’infrastructure en production (Docker Secrets, Vault ou équivalent). Le fichier `.env` est ignoré par Git. L’écran **Configuration** ne reçoit que deux booléens par fournisseur — utilisable et clé configurée — et n’expose jamais la clé, même masquée. Par exemple :
+
+```dotenv
+NO_EXCUSE_AI_MODE=live
+OPENAI_API_KEY=change-me-outside-git
+ANTHROPIC_API_KEY=change-me-outside-git
+```
+
+Après une modification des secrets, rechargez les services avec `make restart`. En production, limitez la lecture des secrets au processus applicatif et effectuez leur rotation selon la politique de l’entreprise.
+
 Fournisseurs sélectionnables : OpenAI / ChatGPT, Anthropic / Claude, Google Gemini, Mistral, Groq, DeepSeek, OpenRouter, Ollama et toute API compatible OpenAI. Le modèle reste librement éditable par le RH afin d’éviter d’enfermer le produit dans un catalogue vite obsolète.
+
+La configuration de l’entreprise contient deux prompts de base responsables : l’un décide si une candidature mérite l’analyse approfondie, l’autre impose une comparaison factuelle et expliquée pour le scoring. Ils peuvent être adaptés aux règles de recrutement de l’entreprise.
+
+Les valeurs « filtrages simultanés » et « analyses simultanées » pilotent de vrais processus de queue. Les superviseurs applicatifs ajoutent ou retirent les workers non-root environ cinq secondes après l’enregistrement, sans exposer le socket Docker à l’application.
 
 ## Validation
 
@@ -99,7 +125,7 @@ Les tests backend s’exécutent dans un projet Docker isolé avec SQLite en mé
 
 - aucune route publique ne liste ou ne révèle une offre ou une candidature ;
 - les clés d’ingestion et de connexion sont stockées sous forme de hash ;
-- les CV ne sont servis qu’au recruteur propriétaire ;
+- les CV ne sont servis qu’aux membres de l’entreprise concernée ;
 - les consignes IA excluent les informations sensibles et critères discriminatoires ;
 - le score assiste la décision, mais la sélection finale reste humaine ;
 - en mode `live`, le texte du CV quitte l’infrastructure vers les fournisseurs choisis : un accord de traitement des données et une politique de rétention restent indispensables avant production.

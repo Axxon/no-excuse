@@ -6,22 +6,9 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
 {
-    public function register(Request $request): JsonResponse
-    {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'confirmed', Password::min(10)->letters()->numbers()],
-        ]);
-        $user = User::create($data);
-
-        return response()->json($this->authenticatedPayload($user), 201);
-    }
-
     public function login(Request $request): JsonResponse
     {
         $data = $request->validate(['email' => ['required', 'email'], 'password' => ['required', 'string']]);
@@ -30,14 +17,14 @@ class AuthController extends Controller
             return response()->json(['message' => 'Identifiants invalides.'], 422);
         }
 
-        return response()->json($this->authenticatedPayload($user));
+        return response()->json(self::payloadFor($user));
     }
 
     public function me(Request $request): JsonResponse
     {
         $user = $request->user();
 
-        return response()->json(['user' => ['uuid' => $user->public_id, 'name' => $user->name, 'email' => $user->email]]);
+        return response()->json(['user' => self::userPayload($user)]);
     }
 
     public function logout(Request $request): JsonResponse
@@ -47,11 +34,22 @@ class AuthController extends Controller
         return response()->json([], 204);
     }
 
-    private function authenticatedPayload(User $user): array
+    public static function payloadFor(User $user): array
     {
         return [
             'token' => $user->createToken('web')->plainTextToken,
-            'user' => ['uuid' => $user->public_id, 'name' => $user->name, 'email' => $user->email],
+            'user' => self::userPayload($user),
+        ];
+    }
+
+    private static function userPayload(User $user): array
+    {
+        return [
+            'uuid' => $user->public_id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role,
+            'organization' => $user->organization ? ['uuid' => $user->organization->public_id, 'name' => $user->organization->name] : null,
         ];
     }
 }

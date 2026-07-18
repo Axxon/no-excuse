@@ -25,6 +25,9 @@ services:
   queue-scoring:
     profiles: ["disabled"]
 
+  queue-notifications:
+    profiles: ["disabled"]
+
   scheduler:
     profiles: ["disabled"]
 

@@ -4,22 +4,26 @@ DOCKER ?= docker
 USER_ID := $(shell id -u)
 GROUP_ID := $(shell id -g)
 
-.PHONY: help setup install scaffold scaffold-api scaffold-web upgrade-api runtime-version build up down logs composer artisan npm test lint validate
+.PHONY: help setup demo install scaffold scaffold-api scaffold-web upgrade-api runtime-version build up restart down logs composer artisan npm test lint validate
 
 help:
 	@echo "no-excuse"
 	@echo "  make setup     Build, install, start and initialize the project"
+	@echo "  make demo      Load optional demonstration data"
 	@echo "  make scaffold  Create the Laravel API and Vue application with Docker"
 	@echo "  make upgrade-api Upgrade Composer dependencies with Docker"
 	@echo "  make runtime-version Show the selected PHP runtime version"
 	@echo "  make build     Build PHP 8.5 and Node 24 images"
 	@echo "  make up        Start the development stack"
+	@echo "  make restart   Reload services after a server configuration change"
 	@echo "  make test      Run the backend suite in the isolated test stack"
 	@echo "  make lint      Check PHP formatting and build the typed frontend"
 	@echo "  make validate  Run the complete validation rail"
 
 setup: build install up
 	$(DOCKER) compose exec api php artisan migrate --force
+
+demo:
 	$(DOCKER) compose exec api php artisan db:seed --force
 
 install:
@@ -62,11 +66,14 @@ build:
 up:
 	USER_ID=$(USER_ID) GROUP_ID=$(GROUP_ID) $(DOCKER) compose up -d
 
+restart:
+	USER_ID=$(USER_ID) GROUP_ID=$(GROUP_ID) $(DOCKER) compose up -d --force-recreate
+
 down:
 	$(DOCKER) compose down
 
 logs:
-	$(DOCKER) compose logs -f api queue-intake queue-scoring web
+	$(DOCKER) compose logs -f api queue-intake queue-scoring queue-notifications web
 
 composer:
 	$(DOCKER) compose exec api composer $(ARGS)

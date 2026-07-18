@@ -16,7 +16,7 @@ class OfferController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $offers = JobOffer::query()
-            ->whereBelongsTo($request->user(), 'recruiter')
+            ->where('organization_id', $request->user()->organization_id)
             ->withCount([
                 'applications',
                 'applications as pending_count' => fn ($query) => $query->whereIn('status', ['received', 'screening', 'qualified', 'scoring']),
@@ -29,9 +29,17 @@ class OfferController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $this->authorizeCanWrite($request);
         $key = Str::random(64);
+        $defaults = $request->user()->organization;
+        $validated = $this->validated($request);
         $offer = $request->user()->jobOffers()->create([
-            ...$this->validated($request),
+            ...$validated,
+            'organization_id' => $request->user()->organization_id,
+            'screening_provider' => $validated['screening_provider'] ?? $defaults->default_screening_provider,
+            'screening_model' => $validated['screening_model'] ?? $defaults->default_screening_model,
+            'scoring_provider' => $validated['scoring_provider'] ?? $defaults->default_scoring_provider,
+            'scoring_model' => $validated['scoring_model'] ?? $defaults->default_scoring_model,
             'ingestion_key_hash' => hash('sha256', $key),
         ]);
 
@@ -51,6 +59,7 @@ class OfferController extends Controller
     public function update(Request $request, JobOffer $offer): OfferResource
     {
         $this->authorizeOwner($request, $offer);
+        $this->authorizeCanWrite($request);
         abort_if($offer->status === 'selection_made', 409, 'Cette campagne est terminée.');
         $offer->update($this->validated($request));
 
@@ -60,6 +69,7 @@ class OfferController extends Controller
     public function open(Request $request, JobOffer $offer): OfferResource
     {
         $this->authorizeOwner($request, $offer);
+        $this->authorizeCanWrite($request);
         $request->validate(['closes_at' => ['required', 'date', 'after:now']]);
         $offer->update(['status' => 'open', 'opens_at' => now(), 'closes_at' => $request->date('closes_at')]);
 
@@ -69,6 +79,7 @@ class OfferController extends Controller
     public function close(Request $request, JobOffer $offer, FinalizeOffer $finalize): OfferResource
     {
         $this->authorizeOwner($request, $offer);
+        $this->authorizeCanWrite($request);
         $finalize->handle($offer);
 
         return new OfferResource($offer->fresh()->loadCount('applications'));
@@ -77,6 +88,7 @@ class OfferController extends Controller
     public function rotateIngestionKey(Request $request, JobOffer $offer): JsonResponse
     {
         $this->authorizeOwner($request, $offer);
+        $this->authorizeCanWrite($request);
         abort_if($offer->status === 'selection_made', 409, 'Cette campagne est terminée.');
 
         $key = Str::random(64);
@@ -102,15 +114,20 @@ class OfferController extends Controller
             'criteria.*' => ['required', 'string', 'max:180'],
             'rejection_message' => ['required', 'string', 'min:20', 'max:3000'],
             'final_rejection_message' => ['required', 'string', 'min:20', 'max:3000'],
-            'screening_provider' => ['required', Rule::in($providers)],
+            'screening_provider' => ['sometimes', Rule::in($providers)],
             'screening_model' => ['nullable', 'string', 'max:160'],
-            'scoring_provider' => ['required', Rule::in($providers)],
+            'scoring_provider' => ['sometimes', Rule::in($providers)],
             'scoring_model' => ['nullable', 'string', 'max:160'],
         ]);
     }
 
     private function authorizeOwner(Request $request, JobOffer $offer): void
     {
-        abort_unless($offer->user_id === $request->user()->getKey(), 404);
+        abort_unless($offer->organization_id === $request->user()->organization_id, 404);
+    }
+
+    private function authorizeCanWrite(Request $request): void
+    {
+        abort_if($request->user()->role === 'viewer', 403, 'Ce compte est en lecture seule.');
     }
 }

@@ -1,9 +1,20 @@
 export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:18080/api'
 
-export interface User { uuid: string; name: string; email: string }
+export interface User { uuid: string; name: string; email: string; role: string; organization: { uuid: string; name: string } | null }
 export interface AuthPayload { token: string; user: User }
-export interface ProviderOption { key: string; label: string; defaults: { screening: string; scoring: string } }
+export interface SetupStatus { configured: boolean }
+export interface ProviderOption {
+  key: string; label: string; defaults: { screening: string; scoring: string };
+  configured: boolean; credential_configured: boolean;
+}
 export interface AiMeta { mode: string; providers: ProviderOption[] }
+export interface Organization {
+  uuid: string; name: string; notification_sender_name: string; notification_reply_to: string;
+  default_screening_provider: string; default_screening_model: string | null;
+  default_scoring_provider: string; default_scoring_model: string | null;
+  screening_workers: number; scoring_workers: number; screening_prompt: string; scoring_prompt: string;
+}
+export interface TeamMember { uuid: string; name: string; email: string; role: string }
 export interface Offer {
   uuid: string; title: string; company: string; location: string | null; description: string; criteria: string[];
   rejection_message?: string; final_rejection_message?: string; screening_provider?: string; screening_model?: string | null;

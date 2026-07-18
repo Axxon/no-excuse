@@ -24,14 +24,23 @@ class RecruitmentFlowTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_recruiter_can_register_and_configure_two_ai_providers(): void
+    public function test_first_recruiter_can_install_the_company_and_configure_two_ai_providers(): void
     {
-        $auth = $this->postJson('/api/auth/register', [
+        $auth = $this->postJson('/api/setup', [
+            'company_name' => 'Acme France',
             'name' => 'Alice RH',
             'email' => 'alice@example.test',
             'password' => 'strong-password-2026',
             'password_confirmation' => 'strong-password-2026',
         ])->assertCreated()->json();
+
+        $this->postJson('/api/setup', [
+            'company_name' => 'Intrus',
+            'name' => 'Autre personne',
+            'email' => 'other@example.test',
+            'password' => 'strong-password-2026',
+            'password_confirmation' => 'strong-password-2026',
+        ])->assertConflict();
 
         $this->withToken($auth['token'])->postJson('/api/offers', $this->offerPayload([
             'screening_provider' => 'openai',
@@ -41,6 +50,70 @@ class RecruitmentFlowTest extends TestCase
         ]))->assertCreated()
             ->assertJsonPath('data.screening_provider', 'openai')
             ->assertJsonPath('data.scoring_provider', 'anthropic');
+    }
+
+    public function test_company_team_shares_offers_and_can_configure_velocity_and_prompts(): void
+    {
+        $owner = User::factory()->create();
+        $teammate = $owner->organization->users()->create([
+            'name' => 'Collègue RH',
+            'email' => 'colleague@example.test',
+            'password' => 'strong-password-2026',
+            'role' => 'recruiter',
+        ]);
+        $viewer = $owner->organization->users()->create([
+            'name' => 'Direction',
+            'email' => 'viewer@example.test',
+            'password' => 'strong-password-2026',
+            'role' => 'viewer',
+        ]);
+        $offer = $this->offer($owner);
+
+        Sanctum::actingAs($teammate);
+        $this->getJson('/api/offers')->assertOk()->assertJsonPath('data.0.uuid', $offer->public_id);
+
+        Sanctum::actingAs($viewer);
+        $this->postJson('/api/offers', $this->offerPayload())->assertForbidden();
+
+        Sanctum::actingAs($owner);
+        $screeningPrompt = 'Filtre de base personnalisé qui conserve les compétences transférables et ignore toutes les données sensibles du candidat.';
+        $scoringPrompt = 'Compare chaque critère professionnel avec des preuves observables, explique les écarts et ne prend jamais la décision finale.';
+        $this->putJson('/api/organization', [
+            'name' => 'Entreprise partagée',
+            'notification_sender_name' => 'Équipe RH',
+            'notification_reply_to' => 'rh@example.test',
+            'default_screening_provider' => 'openai',
+            'default_screening_model' => 'small-model',
+            'default_scoring_provider' => 'anthropic',
+            'default_scoring_model' => 'fine-model',
+            'screening_workers' => 4,
+            'scoring_workers' => 2,
+            'screening_prompt' => $screeningPrompt,
+            'scoring_prompt' => $scoringPrompt,
+        ])->assertOk()
+            ->assertJsonPath('data.screening_workers', 4)
+            ->assertJsonPath('data.scoring_workers', 2)
+            ->assertJsonPath('data.screening_prompt', $screeningPrompt)
+            ->assertJsonPath('data.scoring_prompt', $scoringPrompt);
+    }
+
+    public function test_ai_provider_status_is_private_and_never_exposes_credentials(): void
+    {
+        config()->set('no-excuse.ai.mode', 'live');
+        config()->set('no-excuse.ai.credentials.openai', true);
+        config()->set('ai.providers.openai.key', 'super-secret-provider-token');
+
+        $this->getJson('/api/meta/ai-providers')->assertUnauthorized();
+
+        Sanctum::actingAs(User::factory()->create());
+        $response = $this->getJson('/api/meta/ai-providers')
+            ->assertOk()
+            ->assertJsonPath('mode', 'live')
+            ->assertJsonPath('providers.0.key', 'openai')
+            ->assertJsonPath('providers.0.configured', true)
+            ->assertJsonPath('providers.0.credential_configured', true);
+
+        $this->assertStringNotContainsString('super-secret-provider-token', $response->getContent());
     }
 
     public function test_external_service_can_submit_a_cv_with_the_private_offer_key(): void

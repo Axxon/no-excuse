@@ -45,6 +45,7 @@ class ApplicationController extends Controller
     public function annotate(Request $request, Application $application): JsonResponse
     {
         $this->authorizeApplication($request, $application);
+        $this->authorizeCanWrite($request);
         $data = $request->validate(['body' => ['required', 'string', 'max:5000']]);
         $annotation = $application->annotations()->make($data);
         $annotation->user()->associate($request->user());
@@ -56,6 +57,7 @@ class ApplicationController extends Controller
     public function feedback(Request $request, Application $application): ApplicationResource
     {
         $this->authorizeApplication($request, $application);
+        $this->authorizeCanWrite($request);
         $data = $request->validate(['candidate_feedback' => ['nullable', 'string', 'max:3000']]);
         $application->update($data);
 
@@ -65,6 +67,7 @@ class ApplicationController extends Controller
     public function reorder(Request $request, JobOffer $offer): AnonymousResourceCollection
     {
         $this->authorizeOffer($request, $offer);
+        $this->authorizeCanWrite($request);
         $data = $request->validate(['applications' => ['required', 'array', 'max:10'], 'applications.*' => ['required', 'uuid']]);
         $shortlisted = $offer->applications()->where('status', 'shortlisted')->whereIn('public_id', $data['applications'])->get()->keyBy('public_id');
         abort_unless($shortlisted->count() === count($data['applications']), 422, 'La liste contient une candidature non présélectionnée.');
@@ -76,6 +79,7 @@ class ApplicationController extends Controller
     public function select(Request $request, Application $application): ApplicationResource
     {
         $this->authorizeApplication($request, $application);
+        $this->authorizeCanWrite($request);
         $offer = $application->offer;
         abort_unless($offer->status === 'closed', 409, 'Clôturez la campagne avant la sélection finale.');
         abort_if($offer->applications()->whereIn('status', ['received', 'screening', 'qualified', 'scoring'])->exists(), 409, 'Des candidatures sont encore en cours de traitement.');
@@ -100,7 +104,7 @@ class ApplicationController extends Controller
 
     private function authorizeOffer(Request $request, JobOffer $offer): void
     {
-        abort_unless($offer->user_id === $request->user()->getKey(), 404);
+        abort_unless($offer->organization_id === $request->user()->organization_id, 404);
     }
 
     private function authorizeApplication(Request $request, Application $application): void
@@ -117,5 +121,10 @@ class ApplicationController extends Controller
 
         $application->update(['read_at' => now()]);
         $application->events()->create(['type' => 'read_by_recruiter', 'metadata' => null]);
+    }
+
+    private function authorizeCanWrite(Request $request): void
+    {
+        abort_if($request->user()->role === 'viewer', 403, 'Ce compte est en lecture seule.');
     }
 }

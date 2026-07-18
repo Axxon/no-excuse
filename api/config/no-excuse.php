@@ -14,6 +14,19 @@ return [
             'ollama' => 'Ollama local',
             'openai-compatible' => 'API compatible OpenAI',
         ],
+        // Only these booleans may be exposed to authenticated recruiters. Secret
+        // values remain in the server environment and never enter an API payload.
+        'credentials' => [
+            'openai' => filled(env('OPENAI_API_KEY')),
+            'anthropic' => filled(env('ANTHROPIC_API_KEY')),
+            'gemini' => filled(env('GEMINI_API_KEY')),
+            'mistral' => filled(env('MISTRAL_API_KEY')),
+            'groq' => filled(env('GROQ_API_KEY')),
+            'deepseek' => filled(env('DEEPSEEK_API_KEY')),
+            'openrouter' => filled(env('OPENROUTER_API_KEY')),
+            'ollama' => filled(env('OLLAMA_URL')),
+            'openai-compatible' => filled(env('OPENAI_COMPATIBLE_URL')) && filled(env('OPENAI_COMPATIBLE_API_KEY')),
+        ],
         'defaults' => [
             'openai' => ['screening' => env('OPENAI_SCREENING_MODEL', 'gpt-5-mini'), 'scoring' => env('OPENAI_SCORING_MODEL', 'gpt-5')],
             'anthropic' => ['screening' => env('ANTHROPIC_SCREENING_MODEL', 'claude-haiku-4-5'), 'scoring' => env('ANTHROPIC_SCORING_MODEL', 'claude-sonnet-4-5')],
@@ -27,4 +40,8 @@ return [
         ],
     ],
     'scope_threshold' => (float) env('NO_EXCUSE_SCOPE_THRESHOLD', 25),
+    'prompts' => [
+        'screening' => 'Évalue uniquement si le CV correspond au périmètre professionnel explicite de l’annonce. Ignore le nom, l’âge, le genre, l’origine, la photographie, l’adresse et toute autre donnée sensible. Un profil doit être conservé dès lors que ses compétences transférables rendent une analyse approfondie raisonnable.',
+        'scoring' => 'Compare le CV aux critères professionnels annoncés. Justifie chaque score par des éléments observables du CV, distingue les compétences démontrées des simples mentions et ne déduis jamais une caractéristique personnelle. Le score aide le RH à prioriser la lecture et ne constitue pas une décision automatique.',
+    ],
 ];

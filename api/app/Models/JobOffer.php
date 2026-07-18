@@ -16,14 +16,18 @@ class JobOffer extends Model
         'title', 'company', 'location', 'description', 'criteria',
         'rejection_message', 'final_rejection_message', 'screening_provider', 'screening_model',
         'scoring_provider', 'scoring_model', 'status', 'opens_at', 'closes_at', 'ingestion_key_hash',
+        'organization_id',
     ];
 
-    protected $hidden = ['id', 'user_id', 'ingestion_key_hash'];
+    protected $hidden = ['id', 'user_id', 'organization_id', 'ingestion_key_hash'];
 
     protected static function booted(): void
     {
         static::creating(function (self $offer): void {
             $offer->public_id ??= (string) Str::uuid7();
+            $offer->organization_id ??= $offer->user_id
+                ? User::query()->whereKey($offer->user_id)->value('organization_id')
+                : null;
         });
     }
 
@@ -35,6 +39,11 @@ class JobOffer extends Model
     public function recruiter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
     }
 
     public function applications(): HasMany

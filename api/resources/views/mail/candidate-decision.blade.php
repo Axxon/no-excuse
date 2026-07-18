@@ -17,5 +17,5 @@ Votre score d'adéquation final est de **{{ number_format($application->final_sc
 
 Merci pour le temps consacré à votre candidature.
 
-L'équipe no-excuse
+{{ $application->offer->organization?->notification_sender_name ?? "L'équipe recrutement" }}
 </x-mail::message>
