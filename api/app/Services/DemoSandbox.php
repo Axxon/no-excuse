@@ -14,7 +14,7 @@ use RuntimeException;
 
 class DemoSandbox
 {
-    private const PUBLIC_SESSION_HARD_LIMIT = 5;
+    private const PUBLIC_SESSION_HARD_LIMIT = 20;
 
     public function __construct(private readonly DemoCvPdf $cvPdf) {}
 

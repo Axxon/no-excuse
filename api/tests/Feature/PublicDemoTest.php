@@ -55,7 +55,7 @@ class PublicDemoTest extends TestCase
                 'enabled' => true,
                 'candidate_count' => 20,
                 'active_sessions' => 2,
-                'max_sessions' => 5,
+                'max_sessions' => 20,
                 'at_capacity' => false,
             ]);
 
@@ -84,13 +84,13 @@ class PublicDemoTest extends TestCase
         $this->assertDatabaseCount('applications', 20);
     }
 
-    public function test_public_demo_capacity_is_hard_capped_at_five(): void
+    public function test_public_demo_capacity_is_hard_capped_at_twenty(): void
     {
         config()->set('no-excuse.public_demo.max_sessions', 100);
 
         $this->getJson('/api/demo')
             ->assertOk()
-            ->assertJson(['max_sessions' => 5]);
+            ->assertJson(['max_sessions' => 20]);
     }
 
     public function test_demo_logout_immediately_destroys_the_sandbox_and_releases_capacity(): void
