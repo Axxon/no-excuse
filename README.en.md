@@ -12,7 +12,7 @@ Open-source, self-hosted recruitment workflow for accountable candidate processi
 4. At closing time, recruiters review, annotate and reorder a top 10 before making the final human decision.
 5. Every non-selected candidate receives a response, their score and optional recruiter feedback.
 
-The application supports separate AI providers/models for screening and scoring, editable prompts, 1–10 adaptive workers per queue, an MIT PDF reader, rejected-CV retention, and an isolated deterministic public demo with capacity control.
+The application supports separate AI providers/models for screening and scoring, editable prompts, 1–10 adaptive workers per queue, an MIT PDF reader, rejected-CV retention, and an isolated public demo with capacity control. Demo PDF files are materialized once and shared read-only; lightweight Laravel jobs replay precomputed screening and scoring results without repeating PDF extraction or AI analysis for each visitor.
 
 Although the demo sends no candidate email, recruiters can preview the exact production HTML response inside an isolated frame. Independent work on no-excuse and [Sonomundi](https://sonomundi.com) can be supported on [Ko-fi](https://ko-fi.com/axxon).
 
@@ -41,7 +41,7 @@ On `no-excuse.pro`, **Try the demo** automatically creates a temporary recruiter
 - [Public demo deployment](docs/public-demo-deployment.en.md)
 - [License, attribution and terms](docs/legal.en.md)
 
-AI credentials are server-side secrets. They are never entered or returned through the recruiter interface. Demo mode is local, deterministic and makes no paid AI call.
+AI credentials are server-side secrets. They are never entered or returned through the recruiter interface. The public demo replays deterministic fixtures locally and makes no paid AI call.
 
 ## Security and fairness
 

@@ -2,7 +2,7 @@
 
 English · [Français](public-demo-deployment.md)
 
-This provider-neutral profile is separate from an enterprise installation. It accepts only the repository’s 20 fictional CVs and forces deterministic `NO_EXCUSE_AI_MODE=demo`.
+This provider-neutral profile is separate from an enterprise installation. It accepts only the repository’s 20 fictional CVs and forces `NO_EXCUSE_AI_MODE=demo`. The 20 PDF files are materialized once in shared storage. Each sandbox keeps isolated applications and events, while workers replay precomputed results without extracting or analysing those PDFs again.
 
 Copy `.env.demo.example` to the untracked `.env.demo`, then set a unique Laravel `APP_KEY`, strong `DB_PASSWORD`, public HTTPS `APP_URL`, and loopback-facing `DEMO_HTTP_PORT`. Do not add paid AI keys.
 

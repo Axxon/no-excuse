@@ -122,7 +122,7 @@ Les valeurs « filtrages simultanés » et « analyses simultanées » pilotent 
 
 ## Démo publique sans coût IA
 
-Le mode public optionnel crée une sandbox logique dédiée à chaque visiteur. Elle contient une entreprise temporaire, un compte RH et 20 CV entièrement fictifs. Les vraies queues filtrent et scorent progressivement les candidatures avec l’analyseur déterministe local ; le visiteur peut ensuite produire le top 10, lire les CV, annoter, réordonner et sélectionner.
+Le mode public optionnel crée une sandbox logique dédiée à chaque visiteur. Elle contient une entreprise temporaire, un compte RH et 20 candidatures entièrement fictives. Les PDF sont générés une seule fois puis partagés en lecture seule. Les queues Laravel rejouent progressivement des résultats de filtrage et de scoring pré-calculés : aucune extraction PDF, aucun calcul IA et aucun appel fournisseur ne sont répétés par visiteur. Le visiteur peut ensuite produire le top 10, lire les CV, annoter, réordonner et sélectionner.
 
 La démo publique n’accepte aucun CV externe, n’appelle aucun fournisseur payant et ne transmet aucun e-mail candidat. Chaque réponse générée peut néanmoins être prévisualisée dans l’espace RH : c’est le véritable rendu HTML du mail de production, affiché dans une iframe isolée. Chaque sandbox possède son propre UUID d’organisation et ses propres jetons Sanctum. Elle est supprimée avec ses fichiers après quatre heures par défaut ou immédiatement lorsque le visiteur choisit de la libérer et se déconnecte. Cinq sandboxes simultanées sont autorisées au maximum et un même visiteur ne peut en créer qu’une pendant cette durée ; une liste d’attente opt-in peut envoyer un unique e-mail de disponibilité.
 

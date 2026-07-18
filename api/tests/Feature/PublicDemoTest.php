@@ -2,13 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Contracts\CandidateAnalyzer;
-use App\Jobs\ScoreApplication;
-use App\Jobs\ScreenApplication;
+use App\Jobs\ReplayDemoApplication;
 use App\Jobs\SendCandidateDecision;
 use App\Models\Application;
 use App\Services\ApplicationRetention;
-use App\Services\CvTextExtractor;
+use App\Services\DemoAnalysisCatalog;
 use App\Services\DemoSandbox;
 use App\Services\FinalizeOffer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -49,7 +47,7 @@ class PublicDemoTest extends TestCase
         $this->withToken($first['token'])->putJson('/api/organization', [])->assertForbidden();
         $this->postJson('/api/setup', [])->assertForbidden();
         $this->assertDatabaseCount('applications', 40);
-        Queue::assertPushed(ScreenApplication::class, 40);
+        Queue::assertPushed(ReplayDemoApplication::class, 40);
 
         $this->getJson('/api/demo')
             ->assertOk()
@@ -64,6 +62,8 @@ class PublicDemoTest extends TestCase
         $applications = Application::query()->get();
         $this->assertTrue($applications->every(fn ($application): bool => str_ends_with($application->cv_path, '.pdf')));
         $this->assertTrue($applications->every(fn ($application): bool => str_ends_with($application->cv_original_name, '.pdf')));
+        $this->assertCount(20, Storage::disk('local')->allFiles('demo/cvs'));
+        $this->assertCount(20, $applications->pluck('cv_path')->unique());
         $firstPdf = Storage::disk('local')->get($applications->firstOrFail()->cv_path);
         $this->assertStringStartsWith('%PDF-', $firstPdf);
         $this->assertGreaterThan(3000, strlen($firstPdf));
@@ -106,20 +106,21 @@ class PublicDemoTest extends TestCase
         $this->assertDatabaseMissing('personal_access_tokens', ['tokenable_id' => $user->id]);
         $this->assertDatabaseCount('applications', 0);
         Storage::disk('local')->assertMissing('cvs/'.$offer->public_id);
+        $this->assertCount(20, Storage::disk('local')->allFiles('demo/cvs'));
         $this->getJson('/api/demo')->assertOk()->assertJson(['active_sessions' => 0]);
     }
 
-    public function test_demo_runs_the_real_pipeline_without_sending_email_or_accepting_external_cvs(): void
+    public function test_demo_replays_precomputed_analysis_without_sending_email_or_accepting_external_cvs(): void
     {
         ['user' => $user, 'offer' => $offer] = app(DemoSandbox::class)->create();
-        $analyzer = app(CandidateAnalyzer::class);
-        $extractor = app(CvTextExtractor::class);
+        $catalog = app(DemoAnalysisCatalog::class);
 
-        $offer->applications()->pluck('id')->each(
-            fn (int $id) => (new ScreenApplication($id))->handle($analyzer, $extractor),
+        $offer->applications()->oldest('id')->get()->values()->each(
+            fn (Application $application, int $index) => $this->replayDemoApplication($application, $index, $catalog),
         );
         $this->assertGreaterThanOrEqual(10, $offer->applications()->where('status', 'qualified')->count());
         $this->assertGreaterThan(0, $offer->applications()->where('status', 'rejected_out_of_scope')->count());
+        $this->assertDatabaseHas('application_events', ['type' => 'screened', 'metadata->source' => 'precomputed_demo']);
         $rejected = $offer->applications()->where('status', 'rejected_out_of_scope')->firstOrFail();
         $demoToken = $user->createToken('mail-preview')->plainTextToken;
         $this->withToken($demoToken)
@@ -140,9 +141,14 @@ class PublicDemoTest extends TestCase
             ->assertSee($offer->rejection_message, false)
             ->assertSee($rejected->scope_reason, false);
 
-        $offer->applications()->where('status', 'qualified')->pluck('id')->each(
-            fn (int $id) => (new ScoreApplication($id))->handle($analyzer, $extractor),
+        $offer->applications()->where('status', 'qualified')->oldest('id')->get()->values()->each(
+            function (Application $application, int $index) use ($catalog): void {
+                $candidateIndex = ((int) str_replace(['candidat-', '@example.test'], '', $application->candidate_email)) - 1;
+                (new ReplayDemoApplication($application->id, $candidateIndex, ReplayDemoApplication::SCORING_STARTED))->handle($catalog);
+                (new ReplayDemoApplication($application->id, $candidateIndex, ReplayDemoApplication::SCORING_COMPLETED))->handle($catalog);
+            },
         );
+        $this->assertDatabaseHas('application_events', ['type' => 'scored', 'metadata->source' => 'precomputed_demo']);
         app(FinalizeOffer::class)->handle($offer);
         $this->assertSame(10, $offer->applications()->where('status', 'shortlisted')->count());
 
@@ -178,5 +184,11 @@ class PublicDemoTest extends TestCase
         Storage::disk('local')->assertMissing('cvs/'.$oldOfferUuid);
         auth()->forgetGuards();
         $this->withToken($token)->getJson('/api/auth/me')->assertUnauthorized();
+    }
+
+    private function replayDemoApplication(Application $application, int $candidateIndex, DemoAnalysisCatalog $catalog): void
+    {
+        (new ReplayDemoApplication($application->id, $candidateIndex, ReplayDemoApplication::SCREENING_STARTED))->handle($catalog);
+        (new ReplayDemoApplication($application->id, $candidateIndex, ReplayDemoApplication::SCREENING_COMPLETED))->handle($catalog);
     }
 }

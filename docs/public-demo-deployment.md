@@ -2,7 +2,7 @@
 
 [English](public-demo-deployment.en.md) · Français
 
-Cette composition est distincte d’une installation d’entreprise. Elle ne traite que les CV fictifs inclus dans le dépôt et force `NO_EXCUSE_AI_MODE=demo`.
+Cette composition est distincte d’une installation d’entreprise. Elle ne traite que les CV fictifs inclus dans le dépôt et force `NO_EXCUSE_AI_MODE=demo`. Les 20 PDF sont matérialisés une seule fois dans le volume partagé. Chaque sandbox possède ses propres candidatures et événements, mais les workers rejouent des résultats pré-calculés sans extraire ni réanalyser les PDF.
 
 ## Préparer le serveur
 

@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Jobs\ScreenApplication;
+use App\Jobs\ReplayDemoApplication;
 use App\Models\JobOffer;
 use App\Models\Organization;
 use App\Models\User;
@@ -120,8 +120,10 @@ class DemoSandbox
 
         $applicationIds = [];
         foreach ($this->candidates() as $index => $candidate) {
-            $path = 'cvs/'.$offer->public_id.'/cv-'.str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT).'.pdf';
-            Storage::disk('local')->put($path, $this->cvPdf->render($candidate, $index));
+            $path = 'demo/cvs/cv-'.str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT).'.pdf';
+            if (! Storage::disk('local')->exists($path)) {
+                Storage::disk('local')->put($path, $this->cvPdf->render($candidate, $index));
+            }
             $application = $offer->applications()->create([
                 'candidate_name' => $candidate['name'],
                 'candidate_email' => 'candidat-'.($index + 1).'@example.test',
@@ -139,7 +141,7 @@ class DemoSandbox
 
         $delay = max(0, (int) config('no-excuse.public_demo.processing_delay_seconds'));
         foreach ($applicationIds as $index => $applicationId) {
-            ScreenApplication::dispatch($applicationId)
+            ReplayDemoApplication::dispatch($applicationId, $index)
                 ->delay(now()->addSeconds($index * $delay))
                 ->afterCommit()
                 ->onQueue('candidate-intake');
