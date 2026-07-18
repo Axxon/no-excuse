@@ -15,11 +15,11 @@ class JobOffer extends Model
     protected $fillable = [
         'title', 'company', 'location', 'description', 'criteria',
         'rejection_message', 'final_rejection_message', 'screening_provider', 'screening_model',
-        'scoring_provider', 'scoring_model', 'status', 'opens_at', 'closes_at', 'ingestion_key_hash',
-        'organization_id',
+        'scoring_provider', 'scoring_model', 'status', 'opens_at', 'closes_at', 'closure_requested_at',
+        'finalized_at', 'selected_application_id', 'ingestion_key_hash', 'organization_id',
     ];
 
-    protected $hidden = ['id', 'user_id', 'organization_id', 'ingestion_key_hash'];
+    protected $hidden = ['id', 'user_id', 'organization_id', 'selected_application_id', 'ingestion_key_hash'];
 
     protected static function booted(): void
     {
@@ -33,7 +33,10 @@ class JobOffer extends Model
 
     protected function casts(): array
     {
-        return ['criteria' => 'array', 'opens_at' => 'datetime', 'closes_at' => 'datetime'];
+        return [
+            'criteria' => 'array', 'opens_at' => 'datetime', 'closes_at' => 'datetime',
+            'closure_requested_at' => 'datetime', 'finalized_at' => 'datetime',
+        ];
     }
 
     public function recruiter(): BelongsTo

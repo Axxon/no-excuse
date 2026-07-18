@@ -18,6 +18,7 @@ class Organization extends Model
         'default_screening_provider', 'default_screening_model',
         'default_scoring_provider', 'default_scoring_model',
         'screening_workers', 'scoring_workers', 'screening_prompt', 'scoring_prompt',
+        'rejected_cv_retention_days', 'selected_cv_retention_days', 'candidate_data_retention_days',
         'is_demo', 'expires_at',
     ];
 
@@ -37,6 +38,9 @@ class Organization extends Model
             'scoring_workers' => 'integer',
             'is_demo' => 'boolean',
             'expires_at' => 'datetime',
+            'rejected_cv_retention_days' => 'integer',
+            'selected_cv_retention_days' => 'integer',
+            'candidate_data_retention_days' => 'integer',
         ];
     }
 

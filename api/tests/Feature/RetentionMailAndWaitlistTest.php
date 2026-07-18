@@ -123,13 +123,13 @@ class RetentionMailAndWaitlistTest extends TestCase
             ->assertJson(['active_sessions' => 1, 'max_sessions' => 1, 'at_capacity' => true]);
 
         $this->postJson('/api/demo/sessions')->assertServiceUnavailable();
-        $this->postJson('/api/demo/waitlist', ['email' => 'sebastien.grans@gmail.com', 'locale' => 'fr'])->assertAccepted();
-        $this->assertDatabaseHas('demo_waitlist_entries', ['email_hash' => hash('sha256', 'sebastien.grans@gmail.com'), 'status' => 'waiting']);
+        $waitlist = $this->postJson('/api/demo/waitlist', ['email' => 'sebastien.grans@gmail.com', 'locale' => 'fr'])->assertAccepted()->json();
+        $this->assertDatabaseHas('demo_waitlist_entries', ['email_hash' => hash_hmac('sha256', 'sebastien.grans@gmail.com', (string) config('app.key')), 'status' => 'waiting']);
         $this->getJson('/api/demo')
             ->assertOk()
             ->assertJsonPath('waitlist_count', 1)
             ->assertJsonPath('waitlist.0.position', 1)
-            ->assertJsonPath('waitlist.0.masked_email', 's*******n.g***s@g***l.com')
+            ->assertJsonPath('waitlist.0.reference', $waitlist['reference'])
             ->assertJsonMissing(['sebastien.grans@gmail.com']);
 
         $user->organization->update(['expires_at' => now()->subMinute()]);
@@ -141,7 +141,7 @@ class RetentionMailAndWaitlistTest extends TestCase
                 && str_contains($mail->render(), 'C’est votre tour')
                 && str_contains($mail->render(), 'Lancer ma démo');
         });
-        $this->assertDatabaseHas('demo_waitlist_entries', ['email_hash' => hash('sha256', 'sebastien.grans@gmail.com'), 'status' => 'notified']);
+        $this->assertDatabaseHas('demo_waitlist_entries', ['email_hash' => hash_hmac('sha256', 'sebastien.grans@gmail.com', (string) config('app.key')), 'status' => 'notified']);
         $this->getJson('/api/demo')->assertJsonPath('waitlist_count', 0)->assertJsonPath('waitlist', []);
     }
 

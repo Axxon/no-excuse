@@ -51,7 +51,7 @@ async function logout(): Promise<void> {
 <template>
   <section class="dashboard-header page-section">
     <div><span class="eyebrow">{{ t('dashboard.welcome', { name: auth.user?.name ?? '' }) }}</span><h1>{{ t('dashboard.title') }}</h1><p class="lead">{{ t('dashboard.lead') }}</p></div>
-    <div class="actions"><button v-if="!auth.user?.organization?.is_demo" class="button" @click="showForm = !showForm">+ {{ t('dashboard.newOffer') }}</button><button class="text-button" @click="logout">{{ auth.user?.organization?.is_demo ? t('demo.release') : t('nav.logout') }}</button></div>
+    <div class="actions"><button v-if="!auth.user?.organization?.is_demo && auth.user?.role !== 'viewer'" class="button" @click="showForm = !showForm">+ {{ t('dashboard.newOffer') }}</button><button class="text-button" @click="logout">{{ auth.user?.organization?.is_demo ? t('demo.release') : t('nav.logout') }}</button></div>
   </section>
 
   <section v-if="showForm" class="page-section creation-panel">

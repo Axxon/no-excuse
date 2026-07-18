@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\TeamInvitationMail;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
+use Throwable;
 
 class OrganizationController extends Controller
 {
@@ -32,6 +36,9 @@ class OrganizationController extends Controller
             'scoring_workers' => ['required', 'integer', 'min:1', 'max:10'],
             'screening_prompt' => ['required', 'string', 'min:40', 'max:8000'],
             'scoring_prompt' => ['required', 'string', 'min:40', 'max:8000'],
+            'rejected_cv_retention_days' => ['sometimes', 'integer', 'min:0', 'max:730'],
+            'selected_cv_retention_days' => ['sometimes', 'integer', 'min:1', 'max:730'],
+            'candidate_data_retention_days' => ['sometimes', 'integer', 'min:30', 'max:1825'],
         ]);
         $request->user()->organization->update($data);
 
@@ -54,11 +61,53 @@ class OrganizationController extends Controller
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'role' => ['required', Rule::in(['admin', 'recruiter', 'viewer'])],
-            'password' => ['required', Password::min(10)->letters()->numbers()],
         ]);
-        $member = $request->user()->organization->users()->create($data);
+        $token = Str::random(64);
+        $member = $request->user()->organization->users()->create([
+            ...$data,
+            'password' => Str::password(40),
+            'invitation_token_hash' => hash('sha256', $token),
+            'invitation_expires_at' => now()->addDay(),
+        ]);
+        try {
+            Mail::to($member->email)->send(new TeamInvitationMail($member->load('organization'), $token));
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return response()->json(['message' => 'Le compte a été créé, mais l’invitation n’a pas pu être envoyée. Utilisez « Renvoyer » depuis la liste.'], 503);
+        }
 
         return response()->json(['data' => $this->memberPayload($member)], 201);
+    }
+
+    public function resendMemberInvitation(Request $request, User $member): JsonResponse
+    {
+        abort_unless($request->user()->canManageTeam(), 403);
+        abort_if($request->user()->organization->is_demo, 403);
+        abort_unless($member->organization_id === $request->user()->organization_id, 404);
+        abort_unless($member->invitation_token_hash, 409, 'Ce compte est déjà activé.');
+
+        $token = Str::random(64);
+        $member->update(['invitation_token_hash' => hash('sha256', $token), 'invitation_expires_at' => now()->addDay()]);
+        Mail::to($member->email)->send(new TeamInvitationMail($member->load('organization'), $token));
+
+        return response()->json(['message' => 'Invitation renvoyée.']);
+    }
+
+    public function destroyMember(Request $request, User $member): JsonResponse
+    {
+        abort_unless($request->user()->canManageTeam(), 403);
+        abort_if($request->user()->organization->is_demo, 403);
+        abort_unless($member->organization_id === $request->user()->organization_id, 404);
+        abort_if($member->is($request->user()), 409, 'Vous ne pouvez pas supprimer votre propre accès.');
+        abort_if($member->role === 'owner', 409, 'Le compte responsable ne peut pas être supprimé depuis cette interface.');
+
+        DB::transaction(function () use ($member): void {
+            $member->tokens()->delete();
+            $member->delete();
+        });
+
+        return response()->json([], 204);
     }
 
     private function organizationPayload(Request $request): array
@@ -78,11 +127,14 @@ class OrganizationController extends Controller
             'scoring_workers' => $organization->scoring_workers,
             'screening_prompt' => $organization->screening_prompt ?: config('no-excuse.prompts.screening'),
             'scoring_prompt' => $organization->scoring_prompt ?: config('no-excuse.prompts.scoring'),
+            'rejected_cv_retention_days' => $organization->rejected_cv_retention_days,
+            'selected_cv_retention_days' => $organization->selected_cv_retention_days,
+            'candidate_data_retention_days' => $organization->candidate_data_retention_days,
         ];
     }
 
     private function memberPayload(User $user): array
     {
-        return ['uuid' => $user->public_id, 'name' => $user->name, 'email' => $user->email, 'role' => $user->role];
+        return ['uuid' => $user->public_id, 'name' => $user->name, 'email' => $user->email, 'role' => $user->role, 'invitation_pending' => filled($user->invitation_token_hash)];
     }
 }

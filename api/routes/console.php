@@ -11,9 +11,12 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::call(function (FinalizeOffer $finalize): void {
-    JobOffer::query()->where('status', 'open')->where('closes_at', '<=', now())->each(fn (JobOffer $offer) => $finalize->handle($offer));
+    JobOffer::query()->where('status', 'open')->where('closes_at', '<=', now())->each(fn (JobOffer $offer) => $finalize->request($offer));
+    JobOffer::query()->where('status', 'closing')->each(fn (JobOffer $offer) => $finalize->request($offer));
 })->name('finalize-expired-offers')->everyMinute()->withoutOverlapping();
 
 Schedule::command('demo:prune')->everyFifteenMinutes()->withoutOverlapping();
 Schedule::command('demo:notify-waitlist')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('applications:apply-retention')->daily()->withoutOverlapping();
+Schedule::command('sanctum:prune-expired --hours=24')->daily()->withoutOverlapping();
+Schedule::command('notifications:reconcile')->everyFiveMinutes()->withoutOverlapping();

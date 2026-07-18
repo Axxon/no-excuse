@@ -31,10 +31,15 @@ class ApplicationResource extends JsonResource
             'selected_at' => $this->selected_at?->toIso8601String(),
             'notified_at' => $this->notified_at?->toIso8601String(),
             'notification_status' => $this->notificationStatus(),
+            'notification_error' => in_array($this->notification_state, ['failed', 'attention_required'], true) ? $this->notification_error : null,
+            'processing_stage' => $this->processing_stage,
+            'processing_error' => $this->processing_error,
+            'screening_reviewed_at' => $this->screening_reviewed_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
             'annotations' => $this->whenLoaded('annotations', fn () => $this->annotations->map(fn ($annotation) => [
                 'uuid' => $annotation->public_id,
                 'body' => $annotation->body,
+                'author_name' => $annotation->user?->name ?? 'Compte supprimé',
                 'created_at' => $annotation->created_at?->toIso8601String(),
             ])),
         ];
@@ -42,6 +47,12 @@ class ApplicationResource extends JsonResource
 
     private function notificationStatus(): ?string
     {
+        if ($this->notification_state === 'failed' || $this->notification_state === 'attention_required') {
+            return 'failed';
+        }
+        if ($this->notification_state === 'sending') {
+            return 'sending';
+        }
         if (! in_array($this->status, ['rejected_out_of_scope', 'rejected_final', 'selected'], true)) {
             return null;
         }

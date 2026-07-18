@@ -31,16 +31,16 @@ class RecruitmentFlowTest extends TestCase
             'company_name' => 'Acme France',
             'name' => 'Alice RH',
             'email' => 'alice@example.test',
-            'password' => 'strong-password-2026',
-            'password_confirmation' => 'strong-password-2026',
+            'password' => 'Strong-password-2026',
+            'password_confirmation' => 'Strong-password-2026',
         ])->assertCreated()->json();
 
         $this->postJson('/api/setup', [
             'company_name' => 'Intrus',
             'name' => 'Autre personne',
             'email' => 'other@example.test',
-            'password' => 'strong-password-2026',
-            'password_confirmation' => 'strong-password-2026',
+            'password' => 'Strong-password-2026',
+            'password_confirmation' => 'Strong-password-2026',
         ])->assertConflict();
 
         $this->withToken($auth['token'])->postJson('/api/offers', $this->offerPayload([
@@ -59,13 +59,13 @@ class RecruitmentFlowTest extends TestCase
         $teammate = $owner->organization->users()->create([
             'name' => 'Collègue RH',
             'email' => 'colleague@example.test',
-            'password' => 'strong-password-2026',
+            'password' => 'Strong-password-2026',
             'role' => 'recruiter',
         ]);
         $viewer = $owner->organization->users()->create([
             'name' => 'Direction',
             'email' => 'viewer@example.test',
-            'password' => 'strong-password-2026',
+            'password' => 'Strong-password-2026',
             'role' => 'viewer',
         ]);
         $offer = $this->offer($owner);
@@ -192,7 +192,7 @@ class RecruitmentFlowTest extends TestCase
         $this->assertSame('Profil solide et pertinent.', $application->ai_summary);
     }
 
-    public function test_out_of_scope_screening_immediately_queues_an_explained_candidate_email(): void
+    public function test_out_of_scope_screening_requires_human_confirmation_before_email(): void
     {
         Queue::fake();
         Storage::fake('local');
@@ -217,12 +217,17 @@ class RecruitmentFlowTest extends TestCase
         (new ScreenApplication($application->id))->handle(app(CandidateAnalyzer::class), app(CvTextExtractor::class));
 
         $application->refresh();
-        $this->assertSame('rejected_out_of_scope', $application->status);
+        $this->assertSame('rejection_proposed', $application->status);
         $this->assertSame($reason, $application->scope_reason);
+        Queue::assertNotPushed(SendCandidateDecision::class);
+
+        Sanctum::actingAs($application->offer->recruiter);
+        $this->postJson('/api/applications/'.$application->public_id.'/screening-decision', ['decision' => 'reject'])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'rejected_out_of_scope');
         Queue::assertPushed(SendCandidateDecision::class, fn (SendCandidateDecision $job): bool => $job->applicationId === $application->id && $job->queue === 'notifications');
         $this->assertDatabaseHas('application_events', ['application_id' => $application->id, 'type' => 'candidate_notification_queued']);
 
-        Sanctum::actingAs($application->offer->recruiter);
         $this->getJson('/api/offers/'.$application->offer->public_id.'/applications')
             ->assertOk()
             ->assertJsonFragment([
@@ -230,6 +235,32 @@ class RecruitmentFlowTest extends TestCase
                 'scope_reason' => $reason,
                 'notification_status' => 'pending',
             ]);
+    }
+
+    public function test_closure_waits_for_all_reviews_and_scores_before_building_top_ten(): void
+    {
+        $offer = $this->offer();
+        $this->application($offer, ['status' => 'rejection_proposed']);
+        Sanctum::actingAs($offer->recruiter);
+
+        $this->postJson('/api/offers/'.$offer->public_id.'/close')->assertOk()->assertJsonPath('data.status', 'closing');
+        $this->assertSame(0, $offer->applications()->where('status', 'shortlisted')->count());
+
+        $offer->applications()->update(['status' => 'scored', 'final_score' => 80]);
+        app(FinalizeOffer::class)->request($offer->fresh());
+
+        $this->assertSame('closed', $offer->fresh()->status);
+        $this->assertSame(1, $offer->applications()->where('status', 'shortlisted')->count());
+    }
+
+    public function test_failed_processing_can_be_retried_only_at_its_recorded_stage(): void
+    {
+        Queue::fake();
+        $application = $this->application(attributes: ['status' => 'processing_failed', 'processing_stage' => 'scoring', 'processing_error' => 'timeout']);
+        Sanctum::actingAs($application->offer->recruiter);
+
+        $this->postJson('/api/applications/'.$application->public_id.'/retry')->assertOk()->assertJsonPath('data.status', 'qualified');
+        Queue::assertPushed(ScoreApplication::class, fn (ScoreApplication $job): bool => $job->applicationId === $application->id);
     }
 
     public function test_offer_closure_builds_a_top_ten_and_recruiter_selects_a_candidate(): void
@@ -250,8 +281,10 @@ class RecruitmentFlowTest extends TestCase
         $selected = $applications->first();
         $this->postJson('/api/applications/'.$selected->public_id.'/select')->assertOk()->assertJsonPath('data.status', 'selected');
         $this->assertSame('selection_made', $offer->fresh()->status);
+        $this->assertSame($selected->id, $offer->fresh()->selected_application_id);
         $this->assertSame('rejected_final', $applications->last()->fresh()->status);
         Queue::assertPushed(SendCandidateDecision::class, 12);
+        $this->postJson('/api/applications/'.$applications[1]->public_id.'/select')->assertConflict();
     }
 
     public function test_recruiter_can_rotate_the_one_time_ingestion_key(): void

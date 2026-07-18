@@ -12,7 +12,12 @@ class DemoSlotAvailableMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public string $messageLocale = 'fr') {}
+    public function __construct(public string $messageLocale = 'fr', public ?string $accessToken = null) {}
+
+    public function accessUrl(): string
+    {
+        return rtrim((string) config('app.url'), '/').($this->accessToken ? '/?demo_access='.urlencode($this->accessToken) : '');
+    }
 
     public function envelope(): Envelope
     {

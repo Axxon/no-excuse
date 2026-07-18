@@ -19,8 +19,10 @@ sequenceDiagram
     API->>Q1: Enregistre la candidature dans le catalogue privé
     Q1->>IA1: Vérifie l'adéquation à l'offre
     alt Hors périmètre
-        IA1-->>API: Rejet motivé
-        API-->>C: Message défini par le RH
+        IA1-->>API: Proposition de rejet motivée
+        API-->>RH: Demande une confirmation humaine
+        RH->>API: Confirme le rejet ou poursuit l'analyse
+        API-->>C: Si confirmé, réponse immédiate expliquée
     else Pertinente
         IA1->>Q2: Transmet la candidature qualifiée
         Q2->>IA2: Analyse selon les critères RH
@@ -32,7 +34,7 @@ sequenceDiagram
     API-->>C: Décision, score et retour RH optionnel
 ```
 
-SaaS open source de traitement responsable des candidatures. Une entreprise installe sa propre instance, ses RH partagent les annonces et leur suivi, puis LinkedIn, un ATS ou un site carrière transmet chaque CV à une API d’ingestion dédiée. no-excuse écarte d’abord le hors-périmètre avec une réponse expliquée, puis analyse les profils pertinents, calcule un score de correspondance détaillé selon les critères RH et prépare un top 10 pour la décision humaine finale. Les offres et leur catalogue ne sont jamais publics.
+SaaS open source de traitement responsable des candidatures. Une entreprise installe sa propre instance, ses RH partagent les annonces et leur suivi, puis LinkedIn, un ATS ou un site carrière transmet chaque CV à une API d’ingestion dédiée. no-excuse propose les profils hors périmètre à la validation humaine, répond immédiatement après confirmation, puis analyse les profils pertinents. Chaque candidature reçoit un score global, un score par critère et une synthèse justifiée ; le top 10 sert à la décision humaine finale, jamais à une sélection automatique. Les offres et leur catalogue ne sont jamais publics.
 
 ## Ce que fait le MVP
 
@@ -40,13 +42,13 @@ SaaS open source de traitement responsable des candidatures. Une entreprise inst
 - parcours simple en trois étapes : installation, configuration, première annonce ;
 - clé Bearer distincte et révocable pour chaque offre, affichée une seule fois ;
 - ingestion multipart compatible avec tout connecteur HTTP et déduplication par source/référence externe ;
-- première file avec un modèle économique pour écarter le hors-périmètre ;
+- première file avec un modèle économique pour proposer le hors-périmètre à la confirmation du RH ;
 - seconde file avec un modèle plus fin pour produire score, critères et synthèse ;
 - traitement jusqu’à une date de clôture, puis top 10 réordonnable ;
 - lecture des CV historisée, annotations internes et retour candidat optionnel ;
 - sélection humaine finale et notification de tous les autres candidats ;
 - choix indépendant du fournisseur et du modèle pour les deux étapes IA ;
-- prompts de filtrage et de scoring préremplis, puis modifiables par l’entreprise ;
+- prompts de filtrage et de scoring préremplis, puis modifiables par l’entreprise sous des règles d’équité immuables ;
 - concurrence de 1 à 10 workers par étape, ajustée automatiquement à chaud.
 - purge du fichier CV après notification d’un rejet, avec conservation de la trace d’audit ;
 - lecteur PDF intégré MIT, sans onglet `blob:` ;
@@ -104,7 +106,7 @@ Le service source envoie un formulaire multipart avec `source`, `external_refere
 
 Le mode `demo` est actif par défaut : il est local, gratuit, déterministe et ne transmet aucun CV. Le mode `live` s’active avec `NO_EXCUSE_AI_MODE=live` et la clé du fournisseur concerné.
 
-Les tokens ne sont jamais saisis dans l’interface RH. Le développeur les place dans `api/.env` pour une installation locale, ou dans le gestionnaire de secrets de l’infrastructure en production (Docker Secrets, Vault ou équivalent). Le fichier `.env` est ignoré par Git. L’écran **Configuration** ne reçoit que deux booléens par fournisseur — utilisable et clé configurée — et n’expose jamais la clé, même masquée. Par exemple :
+Les tokens ne sont jamais saisis dans l’interface RH. Le développeur les place dans `api/.env` pour une installation locale, ou dans le gestionnaire de secrets de l’infrastructure en production (Docker Secrets, Vault ou équivalent). Le fichier `.env` est ignoré par Git. L’écran **Configuration** ne reçoit que deux booléens par fournisseur — utilisable et clé configurée — et n’expose jamais la clé, même masquée. La conservation des requêtes côté fournisseur doit être désactivée lorsqu’elle est disponible (`OPENAI_STORE=false` est imposé dans les profils Docker). Par exemple :
 
 ```dotenv
 NO_EXCUSE_AI_MODE=live
@@ -136,7 +138,7 @@ Le déploiement VPS dédié utilise `compose.demo.yml` : PostgreSQL, Redis, l’
 make validate
 ```
 
-Les tests backend s’exécutent dans un projet Docker isolé avec SQLite en mémoire. Le lint vérifie Laravel Pint puis le typage et le build de l’interface.
+Les tests backend s’exécutent dans un projet Docker isolé avec PostgreSQL, comme en production. Le lint vérifie Laravel Pint puis le typage et le build de l’interface.
 
 ## Principes de sécurité et d’équité
 
@@ -149,7 +151,7 @@ Les tests backend s’exécutent dans un projet Docker isolé avec SQLite en mé
 
 Voir aussi [SECURITY.md](SECURITY.md) et [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Guides : [e-mail](docs/email.md) · [rétention](docs/data-retention.md) · [démo publique](docs/public-demo-deployment.md) · [licence et mentions](docs/legal.md).
+Guides : [e-mail](docs/email.md) · [rétention](docs/data-retention.md) · [exploitation et sauvegardes](docs/operations.md) · [démo publique](docs/public-demo-deployment.md) · [licence et mentions](docs/legal.md).
 
 ## Licence
 

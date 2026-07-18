@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Resources\OfferResource;
 use App\Models\JobOffer;
 use App\Services\FinalizeOffer;
+use App\Services\RecruitmentCriteriaPolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -19,7 +20,7 @@ class OfferController extends Controller
             ->where('organization_id', $request->user()->organization_id)
             ->withCount([
                 'applications',
-                'applications as pending_count' => fn ($query) => $query->whereIn('status', ['received', 'screening', 'qualified', 'scoring']),
+                'applications as pending_count' => fn ($query) => $query->whereIn('status', ['received', 'screening', 'qualified', 'scoring', 'processing_failed', 'rejection_proposed']),
                 'applications as shortlisted_count' => fn ($query) => $query->where('status', 'shortlisted'),
             ])
             ->latest()->get();
@@ -83,12 +84,8 @@ class OfferController extends Controller
     {
         $this->authorizeOwner($request, $offer);
         $this->authorizeCanWrite($request);
-        abort_if(
-            $offer->applications()->whereIn('status', ['received', 'screening', 'qualified', 'scoring'])->exists(),
-            409,
-            'Attendez la fin des analyses avant de produire le top 10.',
-        );
-        $finalize->handle($offer);
+        abort_unless(in_array($offer->status, ['open', 'closing'], true), 409, 'Cette campagne ne peut plus être clôturée.');
+        $finalize->request($offer);
 
         return new OfferResource($offer->fresh()->loadCount('applications'));
     }
@@ -114,7 +111,7 @@ class OfferController extends Controller
     {
         $providers = array_keys(config('no-excuse.ai.providers'));
 
-        return $request->validate([
+        $validated = $request->validate([
             'title' => ['required', 'string', 'max:160'],
             'company' => ['required', 'string', 'max:160'],
             'location' => ['nullable', 'string', 'max:160'],
@@ -128,6 +125,10 @@ class OfferController extends Controller
             'scoring_provider' => ['sometimes', Rule::in($providers)],
             'scoring_model' => ['nullable', 'string', 'max:160'],
         ]);
+
+        app(RecruitmentCriteriaPolicy::class)->assertAllowed($validated['criteria']);
+
+        return $validated;
     }
 
     private function authorizeOwner(Request $request, JobOffer $offer): void

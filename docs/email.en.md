@@ -34,6 +34,8 @@ docker compose \
 
 The override contains no secret. It enables SMTP only for the API, notification worker, and scheduler, and remains hosting-provider neutral.
 
-Reload services with `make restart`, then run `make mail-test EMAIL=your-address@example.com`. A successful command means the transport accepted the message; also verify delivery. Configure SPF, DKIM and DMARC. Keep the `notifications` worker active: failed deliveries are retried and a rejected CV is purged only after successful delivery. The demo never emails fictional candidates; only the opt-in availability notification can be sent when a real transport is configured.
+Reload services with `make restart`, then run `make mail-test EMAIL=your-address@example.com`. A successful command means the transport accepted the message; also verify delivery. Configure SPF, DKIM and DMARC. Keep the `notifications` worker active. Every decision uses a stable message identifier and a send lock. Explicit failures are shown and may be retried. A send left ambiguous after a crash becomes **Needs attention** instead of being resent automatically: inspect the SMTP provider, then trigger a manual retry to avoid duplicates. Rejected CV files are purged only after successful delivery.
+
+The same transport carries team invitations, password resets, MFA codes and demo-availability alerts, so test mail before inviting the team. Invitations expire after 24 hours and can be resent from **Settings**. The demo never emails fictional candidates; only the opt-in availability notification can be sent when a real transport is configured.
 
 See the official [Laravel 13 Mail documentation](https://laravel.com/docs/13.x/mail).

@@ -30,7 +30,7 @@ Champs :
 | `external_reference` | oui | identifiant stable de la candidature côté source, 190 caractères max. |
 | `candidate_name` | oui | 160 caractères max. |
 | `candidate_email` | oui | adresse e-mail valide. |
-| `cv` | oui | PDF uniquement (`application/pdf`), 10 Mio max. |
+| `cv` | oui | PDF non chiffré uniquement (`application/pdf`), 10 Mio et 100 pages max. |
 | `cover_letter` | non | texte, 10 000 caractères max. |
 
 Réponse initiale, HTTP 202 :
@@ -43,7 +43,9 @@ Réponse initiale, HTTP 202 :
 }
 ```
 
-Le couple `source` + `external_reference` est idempotent dans une offre. Un nouvel envoi du même couple retourne HTTP 200, la référence initiale et `duplicate: true`, sans créer une seconde candidature. Après le filtre initial, une candidature hors périmètre est immédiatement placée dans la file d’e-mail avec une explication factuelle produite par l’analyse. La fiche RH indique alors `E-mail en attente`, puis `E-mail envoyé` après la remise au fournisseur SMTP.
+Le couple `source` + `external_reference` est idempotent dans une offre. Un nouvel envoi du même couple retourne HTTP 200, la référence initiale et `duplicate: true`, sans créer une seconde candidature. Le filtre initial ne décide pas seul : il place un cas apparemment hors périmètre dans **Rejet à confirmer** avec une explication factuelle. Le RH confirme le rejet ou poursuit l’analyse. Après confirmation, la réponse est immédiatement placée dans la file d’e-mail ; la fiche indique `E-mail en attente`, `Envoi en cours`, puis `E-mail envoyé` ou `E-mail à vérifier`.
+
+La campagne passe en **Clôture en cours** si des analyses, confirmations ou reprises restent attendues. Le top 10 n’est construit qu’une fois toutes les candidatures stabilisées. Le scoring compare uniquement les preuves professionnelles aux critères annoncés ; il n’effectue jamais la sélection finale.
 
 ## 3. Adapter une source
 

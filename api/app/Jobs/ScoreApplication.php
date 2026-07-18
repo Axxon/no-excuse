@@ -6,11 +6,12 @@ use App\Contracts\CandidateAnalyzer;
 use App\Models\Application;
 use App\Services\CvTextExtractor;
 use App\Services\DemoCandidateAnalyzer;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Throwable;
 
-class ScoreApplication implements ShouldQueue
+class ScoreApplication implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
@@ -18,9 +19,16 @@ class ScoreApplication implements ShouldQueue
 
     public int $timeout = 120;
 
+    public int $uniqueFor = 300;
+
     public function __construct(public int $applicationId)
     {
         $this->onQueue('candidate-scoring');
+    }
+
+    public function uniqueId(): string
+    {
+        return (string) $this->applicationId;
     }
 
     public function handle(CandidateAnalyzer $analyzer, CvTextExtractor $extractor): void
@@ -29,11 +37,11 @@ class ScoreApplication implements ShouldQueue
         if (! $application) {
             return;
         }
-        if (! in_array($application->status, ['qualified', 'scoring', 'processing_failed'], true)) {
+        if (! in_array($application->status, ['qualified', 'scoring'], true)) {
             return;
         }
 
-        $application->update(['status' => 'scoring']);
+        $application->update(['status' => 'scoring', 'processing_stage' => 'scoring', 'processing_error' => null]);
         $selectedAnalyzer = $application->offer->organization?->is_demo ? app(DemoCandidateAnalyzer::class) : $analyzer;
         $result = $selectedAnalyzer->score($application->offer, $extractor->extract($application->cv_path));
         $application->update([
@@ -41,12 +49,16 @@ class ScoreApplication implements ShouldQueue
             'final_score' => $result->score,
             'score_breakdown' => $result->breakdown,
             'ai_summary' => $result->summary,
+            'processing_stage' => null,
         ]);
         $application->events()->create(['type' => 'scored', 'metadata' => ['score' => $result->score]]);
     }
 
     public function failed(?Throwable $exception): void
     {
-        Application::query()->whereKey($this->applicationId)->update(['status' => 'processing_failed']);
+        Application::query()->whereKey($this->applicationId)->update([
+            'status' => 'processing_failed', 'processing_stage' => 'scoring',
+            'processing_error' => mb_substr($exception?->getMessage() ?? 'Échec inconnu', 0, 2000),
+        ]);
     }
 }

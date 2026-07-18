@@ -36,6 +36,11 @@ class User extends Authenticatable
         'public_id',
         'organization_id',
         'role',
+        'invitation_token_hash',
+        'invitation_expires_at',
+        'mfa_email_enabled',
+        'mfa_code_hash',
+        'mfa_code_expires_at',
     ];
 
     /**
@@ -46,7 +51,11 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'invitation_token_hash',
+        'mfa_code_hash',
+        'mfa_code_expires_at',
         'id',
+        'organization_id',
     ];
 
     /**
@@ -59,6 +68,9 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'invitation_expires_at' => 'datetime',
+            'mfa_email_enabled' => 'boolean',
+            'mfa_code_expires_at' => 'datetime',
         ];
     }
 

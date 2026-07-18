@@ -24,7 +24,7 @@ async function submit(): Promise<void> {
       <label>{{ t('setup.company') }}<input v-model="company" autofocus required /></label>
       <label>{{ t('setup.ownerName') }}<input v-model="name" autocomplete="name" required /></label>
       <label>{{ t('auth.email') }}<input v-model="email" type="email" autocomplete="email" required /></label>
-      <label>{{ t('auth.password') }}<input v-model="password" type="password" minlength="10" autocomplete="new-password" required /></label>
+      <label>{{ t('auth.password') }}<input v-model="password" type="password" minlength="12" autocomplete="new-password" required /><small>{{ t('auth.passwordRules') }}</small></label>
       <label>{{ t('auth.confirmation') }}<input v-model="confirmation" type="password" autocomplete="new-password" required /></label>
       <button class="button" :disabled="loading">{{ loading ? t('common.loading') : t('setup.continue') }}</button>
     </form>

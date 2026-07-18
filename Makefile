@@ -95,7 +95,7 @@ mail-test:
 	$(DOCKER) compose exec api php artisan mail:test "$(EMAIL)"
 
 test:
-	USER_ID=$(USER_ID) GROUP_ID=$(GROUP_ID) $(DOCKER) compose -p no-excuse-test -f compose.yml -f compose.test.yml run --build --no-deps api
+	COMPOSE_IGNORE_ORPHANS=true USER_ID=$(USER_ID) GROUP_ID=$(GROUP_ID) $(DOCKER) compose -p no-excuse-test -f compose.yml -f compose.test.yml run --rm --build api php artisan test $(TEST_ARGS)
 
 lint:
 	$(DOCKER) compose exec api vendor/bin/pint --test

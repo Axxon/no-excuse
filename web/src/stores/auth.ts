@@ -1,8 +1,8 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { apiRequest, type AuthPayload, type DemoSessionPayload, type User } from '../api'
+import { apiRequest, type AuthPayload, type DemoSessionPayload, type MfaRequired, type User } from '../api'
 
-const storedToken = localStorage.getItem('no-excuse-token') ?? ''
+const storedToken = sessionStorage.getItem('no-excuse-token') ?? ''
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(storedToken)
@@ -12,19 +12,25 @@ export const useAuthStore = defineStore('auth', () => {
   function accept(payload: AuthPayload): void {
     token.value = payload.token
     user.value = payload.user
-    localStorage.setItem('no-excuse-token', payload.token)
+    sessionStorage.setItem('no-excuse-token', payload.token)
   }
 
-  async function login(email: string, password: string): Promise<void> {
-    accept(await apiRequest<AuthPayload>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }))
+  async function login(email: string, password: string, mfaCode?: string): Promise<boolean> {
+    const payload = await apiRequest<AuthPayload | MfaRequired>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password, ...(mfaCode ? { mfa_code: mfaCode } : {}) }) })
+    if ('mfa_required' in payload) return true
+    accept(payload); return false
   }
 
   async function setup(companyName: string, name: string, email: string, password: string): Promise<void> {
     accept(await apiRequest<AuthPayload>('/setup', { method: 'POST', body: JSON.stringify({ company_name: companyName, name, email, password, password_confirmation: password }) }))
   }
 
-  async function startDemo(): Promise<string> {
-    const payload = await apiRequest<DemoSessionPayload>('/demo/sessions', { method: 'POST' })
+  async function startDemo(accessToken?: string): Promise<string> {
+    const visitorReference = localStorage.getItem('no-excuse-demo-visitor') ?? ''
+    const payload = await apiRequest<DemoSessionPayload>('/demo/sessions', {
+      method: 'POST', headers: visitorReference ? { 'X-Demo-Visitor': visitorReference } : undefined,
+      body: accessToken ? JSON.stringify({ access_token: accessToken }) : undefined,
+    })
     accept(payload)
     return payload.demo.offer_uuid
   }
@@ -38,7 +44,7 @@ export const useAuthStore = defineStore('auth', () => {
   function clearSession(): void {
     token.value = ''
     user.value = null
-    localStorage.removeItem('no-excuse-token')
+    sessionStorage.removeItem('no-excuse-token')
   }
 
   async function logout(): Promise<void> {
@@ -54,5 +60,5 @@ export const useAuthStore = defineStore('auth', () => {
     clearSession()
   }
 
-  return { token, user, isAuthenticated, login, setup, startDemo, loadUser, logout, releaseDemo }
+  return { token, user, isAuthenticated, accept, login, setup, startDemo, loadUser, logout, releaseDemo }
 })

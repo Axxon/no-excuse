@@ -2,6 +2,8 @@ x-api: &api
   image: ${NO_EXCUSE_API_IMAGE:-no-excuse-api:local}
   pull_policy: never
   restart: unless-stopped
+  security_opt:
+    - no-new-privileges:true
   environment:
     APP_NAME: no-excuse-demo
     APP_KEY: ${APP_KEY}
@@ -18,6 +20,8 @@ x-api: &api
     QUEUE_CONNECTION: redis
     REDIS_CLIENT: predis
     REDIS_HOST: redis
+    REDIS_QUEUE_RETRY_AFTER: ${REDIS_QUEUE_RETRY_AFTER:-240}
+    NO_EXCUSE_TOKEN_LIFETIME_HOURS: ${NO_EXCUSE_TOKEN_LIFETIME_HOURS:-12}
     MAIL_MAILER: ${MAIL_MAILER:-log}
     MAIL_SCHEME: ${MAIL_SCHEME:-null}
     MAIL_HOST: ${MAIL_HOST:-127.0.0.1}
@@ -27,6 +31,7 @@ x-api: &api
     MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-notifications@example.com}
     MAIL_FROM_NAME: ${MAIL_FROM_NAME:-no-excuse}
     NO_EXCUSE_AI_MODE: demo
+    OPENAI_STORE: "false"
     NO_EXCUSE_PUBLIC_DEMO: "true"
     NO_EXCUSE_DEMO_LIFETIME_HOURS: ${NO_EXCUSE_DEMO_LIFETIME_HOURS:-4}
     NO_EXCUSE_DEMO_MAX_SESSIONS: ${NO_EXCUSE_DEMO_MAX_SESSIONS:-20}
@@ -44,7 +49,6 @@ x-api: &api
       condition: service_healthy
   networks:
     - internal
-
 services:
   migrate:
     image: ${NO_EXCUSE_API_IMAGE:-no-excuse-api:local}
@@ -69,8 +73,10 @@ services:
       QUEUE_CONNECTION: redis
       REDIS_CLIENT: predis
       REDIS_HOST: redis
+      REDIS_QUEUE_RETRY_AFTER: ${REDIS_QUEUE_RETRY_AFTER:-240}
       MAIL_MAILER: log
       NO_EXCUSE_AI_MODE: demo
+      OPENAI_STORE: "false"
       NO_EXCUSE_PUBLIC_DEMO: "true"
     volumes:
       - demo-storage:/app/storage
@@ -84,6 +90,12 @@ services:
 
   api:
     <<: *api
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8000/up') === false ? 1 : 0);"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
 
   queue-intake:
     <<: *api
@@ -109,12 +121,20 @@ services:
       args:
         VITE_API_URL: /api
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     ports:
       - "127.0.0.1:${DEMO_HTTP_PORT:-8088}:8080"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     networks:
       - internal
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
   postgres:
     image: postgres:18.4-alpine

@@ -6,11 +6,12 @@ use App\Contracts\CandidateAnalyzer;
 use App\Models\Application;
 use App\Services\CvTextExtractor;
 use App\Services\DemoCandidateAnalyzer;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Throwable;
 
-class ScreenApplication implements ShouldQueue
+class ScreenApplication implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
@@ -18,9 +19,16 @@ class ScreenApplication implements ShouldQueue
 
     public int $timeout = 90;
 
+    public int $uniqueFor = 300;
+
     public function __construct(public int $applicationId)
     {
         $this->onQueue('candidate-intake');
+    }
+
+    public function uniqueId(): string
+    {
+        return (string) $this->applicationId;
     }
 
     public function handle(CandidateAnalyzer $analyzer, CvTextExtractor $extractor): void
@@ -29,23 +37,25 @@ class ScreenApplication implements ShouldQueue
         if (! $application) {
             return;
         }
-        if (! in_array($application->status, ['received', 'screening', 'processing_failed'], true)) {
+        if (! in_array($application->status, ['received', 'screening'], true)) {
             return;
         }
 
-        $application->update(['status' => 'screening']);
+        $application->update(['status' => 'screening', 'processing_stage' => 'screening', 'processing_error' => null]);
         $selectedAnalyzer = $application->offer->organization?->is_demo ? app(DemoCandidateAnalyzer::class) : $analyzer;
         $result = $selectedAnalyzer->screen($application->offer, $extractor->extract($application->cv_path));
         $application->update([
             'scope_score' => $result->score,
             'scope_reason' => $result->reason,
-            'status' => $result->inScope ? 'qualified' : 'rejected_out_of_scope',
+            'status' => $result->inScope ? 'qualified' : ($application->offer->organization?->is_demo ? 'rejected_out_of_scope' : 'rejection_proposed'),
+            'processing_stage' => null,
+            'notification_state' => ! $result->inScope && $application->offer->organization?->is_demo ? 'pending' : 'none',
         ]);
         $application->events()->create(['type' => 'screened', 'metadata' => ['in_scope' => $result->inScope, 'score' => $result->score]]);
 
         if ($result->inScope) {
             ScoreApplication::dispatch($application->id)->onQueue('candidate-scoring');
-        } else {
+        } elseif ($application->offer->organization?->is_demo) {
             $application->events()->create(['type' => 'candidate_notification_queued', 'metadata' => ['status' => $application->status]]);
             SendCandidateDecision::dispatch($application->id)->onQueue('notifications');
         }
@@ -53,6 +63,9 @@ class ScreenApplication implements ShouldQueue
 
     public function failed(?Throwable $exception): void
     {
-        Application::query()->whereKey($this->applicationId)->update(['status' => 'processing_failed']);
+        Application::query()->whereKey($this->applicationId)->update([
+            'status' => 'processing_failed', 'processing_stage' => 'screening',
+            'processing_error' => mb_substr($exception?->getMessage() ?? 'Échec inconnu', 0, 2000),
+        ]);
     }
 }

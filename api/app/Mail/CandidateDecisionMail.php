@@ -8,6 +8,7 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Mail\Mailables\Headers;
 use Illuminate\Queue\SerializesModels;
 
 class CandidateDecisionMail extends Mailable
@@ -30,5 +31,16 @@ class CandidateDecisionMail extends Mailable
     public function content(): Content
     {
         return new Content(markdown: 'mail.candidate-decision');
+    }
+
+    public function headers(): Headers
+    {
+        $host = parse_url((string) config('app.url'), PHP_URL_HOST) ?: 'no-excuse.invalid';
+
+        return new Headers(
+            messageId: $this->application->notification_message_id
+                ? $this->application->notification_message_id.'@'.$host
+                : null,
+        );
     }
 }

@@ -24,6 +24,10 @@ class CvTextExtractor
             throw new RuntimeException('Aucun texte exploitable trouvé dans le CV.');
         }
 
+        if (mb_strlen($text) > 200000) {
+            throw new RuntimeException('Le CV extrait dépasse la taille de texte autorisée.');
+        }
+
         return $text;
     }
 }

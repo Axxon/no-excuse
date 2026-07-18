@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Jobs\ReplayDemoApplication;
+use App\Models\DemoWaitlistEntry;
 use App\Models\JobOffer;
 use App\Models\Organization;
 use App\Models\User;
@@ -19,15 +20,24 @@ class DemoSandbox
     public function __construct(private readonly DemoCvPdf $cvPdf) {}
 
     /** @return array{user: User, offer: JobOffer} */
-    public function create(): array
+    public function create(?DemoWaitlistEntry $reservation = null): array
     {
-        return Cache::lock('no-excuse:demo-session-capacity', 15)->block(3, function (): array {
+        return Cache::lock('no-excuse:demo-session-capacity', 15)->block(3, function () use ($reservation): array {
             $this->pruneExpired();
-            if ($this->activeCount() >= $this->maxSessions()) {
+            $this->releaseExpiredReservations();
+            if ($reservation) {
+                $reservation->refresh();
+                if ($reservation->status !== 'notified' || ! $reservation->reserved_until?->isFuture()) {
+                    throw new RuntimeException('Cette réservation de démonstration a expiré.');
+                }
+            } elseif ($this->activeCount() + $this->reservedCount() >= $this->maxSessions()) {
                 throw new RuntimeException('Toutes les démonstrations sont occupées. Inscrivez-vous pour être prévenu dès qu’une place se libère.');
             }
 
-            return $this->createSandbox();
+            $sandbox = $this->createSandbox();
+            $reservation?->update(['status' => 'claimed', 'access_token_hash' => null, 'reserved_until' => null]);
+
+            return $sandbox;
         });
     }
 
@@ -39,6 +49,17 @@ class DemoSandbox
     public function maxSessions(): int
     {
         return min(self::PUBLIC_SESSION_HARD_LIMIT, max(1, (int) config('no-excuse.public_demo.max_sessions')));
+    }
+
+    public function reservedCount(): int
+    {
+        return DemoWaitlistEntry::query()->where('status', 'notified')->where('reserved_until', '>', now())->count();
+    }
+
+    public function releaseExpiredReservations(): int
+    {
+        return DemoWaitlistEntry::query()->where('status', 'notified')->where('reserved_until', '<=', now())
+            ->update(['status' => 'waiting', 'access_token_hash' => null, 'reserved_until' => null, 'notified_at' => null]);
     }
 
     /** @return array{user: User, offer: JobOffer} */

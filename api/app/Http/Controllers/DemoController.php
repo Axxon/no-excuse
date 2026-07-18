@@ -7,11 +7,12 @@ use App\Services\DemoSandbox;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 class DemoController extends Controller
 {
-    public function status(DemoSandbox $sandbox): JsonResponse
+    public function status(Request $request, DemoSandbox $sandbox): JsonResponse
     {
         $activeSessions = $sandbox->activeCount();
         $waiting = DemoWaitlistEntry::query()->where('status', 'waiting')->oldest();
@@ -19,7 +20,7 @@ class DemoController extends Controller
         $waitlist = $waiting->limit(20)->get()->values()->map(
             fn (DemoWaitlistEntry $entry, int $index): array => [
                 'position' => $index + 1,
-                'masked_email' => $entry->maskedEmail(),
+                'reference' => $entry->public_id,
             ],
         );
 
@@ -29,31 +30,41 @@ class DemoController extends Controller
             'lifetime_hours' => (int) config('no-excuse.public_demo.lifetime_hours'),
             'active_sessions' => $activeSessions,
             'max_sessions' => $sandbox->maxSessions(),
-            'at_capacity' => $activeSessions >= $sandbox->maxSessions(),
+            'at_capacity' => $activeSessions + $sandbox->reservedCount() >= $sandbox->maxSessions(),
             'waitlist_count' => $waitlistCount,
             'waitlist' => $waitlist,
+            'visitor_reference' => $this->visitorReference($request),
         ]);
     }
 
-    public function waitlist(Request $request): JsonResponse
+    public function waitlist(Request $request, DemoSandbox $sandbox): JsonResponse
     {
         abort_unless(config('no-excuse.public_demo.enabled'), 404);
+        abort_unless($sandbox->activeCount() + $sandbox->reservedCount() >= $sandbox->maxSessions(), 409, 'Une place est disponible : lancez directement la démonstration.');
         $data = $request->validate([
             'email' => ['required', 'email:rfc', 'max:254'],
             'locale' => ['sometimes', 'in:fr,en'],
         ]);
         $normalized = mb_strtolower(trim($data['email']));
-        DemoWaitlistEntry::query()->updateOrCreate(
-            ['email_hash' => hash('sha256', $normalized)],
+        $entry = DemoWaitlistEntry::query()->updateOrCreate(
+            ['email_hash' => hash_hmac('sha256', $normalized, (string) config('app.key'))],
             ['email' => $normalized, 'locale' => $data['locale'] ?? 'fr', 'status' => 'waiting', 'notified_at' => null],
         );
 
-        return response()->json(['message' => 'Inscription enregistrée. Un seul e-mail sera envoyé lorsqu’une place se libérera.'], 202);
+        return response()->json([
+            'message' => 'Inscription enregistrée. Un seul e-mail sera envoyé lorsqu’une place se libérera.',
+            'reference' => $entry->public_id,
+        ], 202);
     }
 
     public function store(Request $request, DemoSandbox $sandbox): JsonResponse
     {
         abort_unless(config('no-excuse.public_demo.enabled'), 404);
+        $data = $request->validate(['access_token' => ['sometimes', 'string', 'size:64']]);
+        $reservation = isset($data['access_token'])
+            ? DemoWaitlistEntry::query()->where('access_token_hash', hash('sha256', $data['access_token']))->first()
+            : null;
+        abort_if(isset($data['access_token']) && ! $reservation, 403, 'Cette réservation de démonstration est invalide ou expirée.');
         $visitorKey = $this->visitorRateLimitKey($request);
         $decaySeconds = max(1, (int) config('no-excuse.public_demo.lifetime_hours')) * 3600;
         if (RateLimiter::hit($visitorKey, $decaySeconds) > 1) {
@@ -63,7 +74,7 @@ class DemoController extends Controller
             ], 429);
         }
         try {
-            ['user' => $user, 'offer' => $offer] = $sandbox->create();
+            ['user' => $user, 'offer' => $offer] = $sandbox->create($reservation);
         } catch (RuntimeException $exception) {
             RateLimiter::clear($visitorKey);
 
@@ -87,6 +98,20 @@ class DemoController extends Controller
 
     private function visitorRateLimitKey(Request $request): string
     {
-        return 'no-excuse:demo-visitor:'.hash('sha256', $request->ip().'|'.($request->userAgent() ?? 'unknown'));
+        $reference = $request->header('X-Demo-Visitor');
+        $identity = is_string($reference) && Str::isUuid($reference)
+            ? $reference
+            : $request->ip().'|'.($request->userAgent() ?? 'unknown');
+
+        return 'no-excuse:demo-visitor:'.hash('sha256', $identity);
+    }
+
+    private function visitorReference(Request $request): string
+    {
+        $reference = $request->header('X-Demo-Visitor');
+
+        return is_string($reference) && Str::isUuid($reference)
+            ? $reference
+            : (string) Str::uuid7();
     }
 }

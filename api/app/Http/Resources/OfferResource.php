@@ -25,6 +25,8 @@ class OfferResource extends JsonResource
             'status' => $this->status,
             'opens_at' => $this->opens_at?->toIso8601String(),
             'closes_at' => $this->closes_at?->toIso8601String(),
+            'closure_requested_at' => $this->closure_requested_at?->toIso8601String(),
+            'finalized_at' => $this->finalized_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
             'intake_url' => url('/api/v1/intake/'.$this->public_id.'/applications'),
             'applications_count' => $this->whenCounted('applications'),

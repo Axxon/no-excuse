@@ -7,8 +7,9 @@ import { apiRequest, type DemoStatus } from '../api'
 
 const { t } = useI18n(); const router = useRouter(); const auth = useAuthStore()
 const email = ref(''); const password = ref(''); const error = ref(''); const loading = ref(false)
+const mfaCode = ref(''); const mfaRequired = ref(false)
 const publicDemo = ref<boolean | null>(null)
-onMounted(async () => { try { publicDemo.value = (await apiRequest<DemoStatus>('/demo')).enabled } catch { publicDemo.value = false } })
+onMounted(async () => { try { const status = await apiRequest<DemoStatus>('/demo', { headers: { 'X-Demo-Visitor': localStorage.getItem('no-excuse-demo-visitor') ?? '' } }); localStorage.setItem('no-excuse-demo-visitor', status.visitor_reference); publicDemo.value = status.enabled } catch { publicDemo.value = false } })
 async function launchDemo(): Promise<void> {
   loading.value = true; error.value = ''
   try { const offerUuid = await auth.startDemo(); await router.push(`/dashboard/offers/${offerUuid}`) }
@@ -17,7 +18,7 @@ async function launchDemo(): Promise<void> {
 }
 async function submit(): Promise<void> {
   loading.value = true; error.value = ''
-  try { await auth.login(email.value, password.value); await router.push('/dashboard') }
+  try { mfaRequired.value = await auth.login(email.value, password.value, mfaCode.value || undefined); if (!mfaRequired.value) await router.push('/dashboard') }
   catch (caught) { error.value = caught instanceof Error ? caught.message : t('common.error') }
   finally { loading.value = false }
 }
@@ -32,7 +33,9 @@ async function submit(): Promise<void> {
       <span class="step-kicker">{{ t('auth.teamOnly') }}</span><h2>{{ t('auth.login') }}</h2><p v-if="error" class="alert">{{ error }}</p>
       <label>{{ t('auth.email') }}<input v-model="email" type="email" autocomplete="email" required /></label>
       <label>{{ t('auth.password') }}<input v-model="password" type="password" autocomplete="current-password" required /></label>
+      <label v-if="mfaRequired">{{ t('auth.mfaCode') }}<input v-model="mfaCode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required /></label>
       <button class="button" :disabled="loading">{{ loading ? t('common.loading') : t('auth.login') }}</button>
+      <RouterLink class="text-button" to="/forgot-password">{{ t('auth.forgotPassword') }}</RouterLink>
       <small>{{ t('auth.installedInstanceHelp') }}</small>
       </form>
       <p v-else>{{ t('common.loading') }}</p>

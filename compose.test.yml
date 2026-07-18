@@ -3,21 +3,26 @@ services:
     environment:
       APP_ENV: testing
       APP_DEBUG: "false"
-      DB_CONNECTION: sqlite
-      DB_DATABASE: ":memory:"
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_DATABASE: no_excuse_test
+      DB_USERNAME: no_excuse
+      DB_PASSWORD: no_excuse
       CACHE_STORE: array
       QUEUE_CONNECTION: sync
       MAIL_MAILER: array
     command: php artisan test
-    ports: []
+    ports: !reset []
 
   postgres:
     environment:
       POSTGRES_DB: no_excuse_test
-    ports: []
+      POSTGRES_USER: no_excuse
+      POSTGRES_PASSWORD: no_excuse
+    ports: !reset []
 
   redis:
-    ports: []
+    ports: !reset []
 
   queue-intake:
     profiles: ["disabled"]
