@@ -32,7 +32,7 @@ sequenceDiagram
     API-->>C: Décision, score et retour RH optionnel
 ```
 
-SaaS open source de traitement responsable des candidatures. Une entreprise installe sa propre instance, ses RH partagent les annonces et leur suivi, puis LinkedIn, un ATS ou un site carrière transmet chaque CV à une API d’ingestion dédiée. Les offres et leur catalogue ne sont jamais publics.
+SaaS open source de traitement responsable des candidatures. Une entreprise installe sa propre instance, ses RH partagent les annonces et leur suivi, puis LinkedIn, un ATS ou un site carrière transmet chaque CV à une API d’ingestion dédiée. no-excuse écarte d’abord le hors-périmètre avec une réponse expliquée, puis analyse les profils pertinents, calcule un score de correspondance détaillé selon les critères RH et prépare un top 10 pour la décision humaine finale. Les offres et leur catalogue ne sont jamais publics.
 
 ## Ce que fait le MVP
 

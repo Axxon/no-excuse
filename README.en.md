@@ -2,7 +2,7 @@
 
 English · [Français](README.md)
 
-Open-source, self-hosted recruitment workflow for accountable candidate processing. Existing job boards, ATSs or career sites send applications to a private ingestion API; offers and application catalogues are never public.
+Open-source, self-hosted recruitment workflow for accountable candidate processing. Existing job boards, ATSs or career sites send applications to a private ingestion API. no-excuse first rejects clearly out-of-scope applications with an explained response, then analyses relevant profiles, calculates a criterion-by-criterion match score, and prepares a top 10 for the final human decision. Offers and application catalogues are never public.
 
 ## Workflow
 
