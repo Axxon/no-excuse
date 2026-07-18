@@ -6,7 +6,7 @@ Cette composition est distincte d’une installation d’entreprise. Elle ne tra
 
 ## Préparer le serveur
 
-Le VPS doit disposer de Docker avec le plugin Compose et d’un reverse proxy HTTPS existant. Clonez le dépôt privé avec une deploy key en lecture seule, puis créez le fichier non versionné :
+Le serveur doit disposer de Docker avec le plugin Compose et d’un reverse proxy HTTPS existant. Clonez le dépôt ou téléchargez une archive de version, puis créez le fichier non versionné :
 
 ```bash
 cp .env.demo.example .env.demo
@@ -61,14 +61,14 @@ Pour une mise à jour, récupérez le nouveau commit privé puis relancez `make 
 avec tout moteur Docker Compose capable de construire depuis une archive HTTP.
 Par défaut, le contexte de construction est le dépôt courant (`.`). La variable
 `SOURCE_ARCHIVE_URL` permet aussi d'utiliser une archive distante, par exemple
-une URL GitHub signée et éphémère :
-le dépôt reste privé et aucun jeton GitHub n'est enregistré sur le serveur. Les
+une URL d’archive GitHub. Pour un dépôt privé, utilisez une URL signée et
+éphémère afin qu’aucun jeton GitHub ne soit enregistré sur le serveur. Les
 Dockerfiles sous `deploy/remote/` construisent l'API et le front depuis la racine
 de cette archive.
 
 Le service `migrate` termine les migrations avant le démarrage de l'API et des
 workers. Le front reste publié uniquement sur `127.0.0.1:8088`; le reverse proxy
-de l'hôte termine TLS pour `no-excuse.pro`.
+de l’hôte termine TLS pour le domaine défini par `APP_URL`.
 
 Le même fichier peut être fourni à un panneau Docker managé ou utilisé
 directement avec Docker Compose sur un VPS, sans adaptation du code

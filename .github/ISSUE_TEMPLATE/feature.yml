@@ -1,0 +1,30 @@
+name: Feature proposal
+description: Propose a focused improvement to the responsible recruitment workflow.
+title: "feat: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: User need
+      description: Which recruiter or candidate problem should be solved?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the outcome rather than only the implementation.
+    validations:
+      required: true
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: Project principles
+      options:
+        - label: Final recruitment decisions remain human.
+          required: true
+        - label: The proposal does not rely on sensitive or discriminatory criteria.
+          required: true
+        - label: Candidate data remains private and subject to retention controls.
+          required: true

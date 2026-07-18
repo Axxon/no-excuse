@@ -41,6 +41,7 @@ On `no-excuse.pro`, **Try the demo** automatically creates a temporary recruiter
 - [Operations, health and backups](docs/operations.en.md)
 - [Public demo deployment](docs/public-demo-deployment.en.md)
 - [License, attribution and terms](docs/legal.en.md)
+- [Project manifesto](MANIFESTO.md) and [third-party notices](THIRD_PARTY_NOTICES.md)
 
 AI credentials are server-side secrets. They are never entered or returned through the recruiter interface. The public demo replays deterministic fixtures locally and makes no paid AI call.
 
@@ -50,4 +51,4 @@ No public route lists an offer or application. Ingestion and login tokens are ha
 
 ## License
 
-Currently MIT. See [license guidance](docs/legal.en.md) before adopting an attribution-preserving network-copyleft model.
+MIT — use it, adapt it, distribute it and build on it. Then actually ship it, and do it well. See the [manifesto](MANIFESTO.md), [legal notes](docs/legal.en.md) and [third-party notices](THIRD_PARTY_NOTICES.md).

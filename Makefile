@@ -104,11 +104,11 @@ lint:
 validate: test lint
 
 remote-config:
-	SOURCE_ARCHIVE_URL=https://example.invalid/no-excuse.tar.gz APP_KEY=base64:validation DB_PASSWORD=validation MAIL_USERNAME=validation MAIL_PASSWORD=validation MAIL_FROM_ADDRESS=validation@example.com $(DOCKER) compose -f compose.remote.yml -f deploy/remote/mailer.override.yml config --quiet
+	SOURCE_ARCHIVE_URL=https://example.invalid/no-excuse.tar.gz APP_URL=https://demo.example.com APP_KEY=base64:validation DB_PASSWORD=validation MAIL_USERNAME=validation MAIL_PASSWORD=validation MAIL_FROM_ADDRESS=validation@example.com $(DOCKER) compose -f compose.remote.yml -f deploy/remote/mailer.override.yml config --quiet
 	sh -n deploy/remote/configure-brevo-secret.sh
 
 remote-build:
-	SOURCE_ARCHIVE_URL=. APP_KEY=base64:validation DB_PASSWORD=validation $(DOCKER) compose -f compose.remote.yml build
+	SOURCE_ARCHIVE_URL=. APP_URL=https://demo.example.com APP_KEY=base64:validation DB_PASSWORD=validation $(DOCKER) compose -f compose.remote.yml build
 
 demo-prod-build:
 	$(DOCKER) compose -p $(DEMO_PROJECT_NAME) --env-file $(DEMO_ENV_FILE) -f compose.demo.yml build

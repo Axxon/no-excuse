@@ -155,4 +155,4 @@ Guides : [e-mail](docs/email.md) · [rétention](docs/data-retention.md) · [exp
 
 ## Licence
 
-MIT
+MIT — utilisez-le, adaptez-le, distribuez-le et construisez dessus. Puis faites-le réellement, et faites-le bien. Voir le [manifeste](MANIFESTO.md), les [mentions](docs/legal.md) et les [licences tierces](THIRD_PARTY_NOTICES.md).

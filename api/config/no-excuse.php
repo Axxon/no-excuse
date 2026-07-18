@@ -21,7 +21,7 @@ return [
         'waitlist_days' => (int) env('NO_EXCUSE_WAITLIST_RETENTION_DAYS', 30),
     ],
     'author' => [
-        'name' => env('NO_EXCUSE_AUTHOR_NAME', 'Project author'),
+        'name' => env('NO_EXCUSE_AUTHOR_NAME', 'Sébastien Grans (Axxon)'),
         'linkedin_url' => env('NO_EXCUSE_AUTHOR_LINKEDIN_URL'),
     ],
     'ai' => [
