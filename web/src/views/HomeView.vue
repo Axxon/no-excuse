@@ -32,7 +32,7 @@ async function joinWaitlist(): Promise<void> {
       <p class="hero-lead">{{ t('home.lead') }}</p>
       <div class="actions">
         <button v-if="demo?.enabled" class="button" :disabled="starting || demo.at_capacity" @click="startDemo">{{ starting ? t('home.demoStarting') : (demo.at_capacity ? t('home.demoFull') : t('home.demoCta')) }}</button>
-        <RouterLink class="button button-ghost" to="/login">{{ t('home.recruiterCta') }}</RouterLink>
+        <RouterLink v-if="demo && !demo.enabled" class="button button-ghost" to="/login">{{ t('home.recruiterCta') }}</RouterLink>
         <a class="button button-ghost" href="https://github.com/Axxon/no-excuse#démarrage" target="_blank" rel="noreferrer">{{ t('home.installCta') }}</a>
       </div>
       <p v-if="demo?.enabled" class="demo-promise">{{ t('home.demoPromise', { count: demo.candidate_count, hours: demo.lifetime_hours }) }}</p>
@@ -50,11 +50,11 @@ async function joinWaitlist(): Promise<void> {
   </section>
 
   <section class="access-paths page-section">
-    <div class="section-title"><div><span class="eyebrow">{{ t('home.accessEyebrow') }}</span><h2>{{ t('home.accessTitle') }}</h2></div></div>
+    <div class="section-title"><div><span class="eyebrow">{{ t('home.accessEyebrow') }}</span><h2>{{ t(demo?.enabled ? 'home.accessPublicTitle' : 'home.accessTitle') }}</h2></div></div>
     <div class="access-grid">
       <article><span>1</span><h3>{{ t('home.accessDemoTitle') }}</h3><p>{{ t('home.accessDemoText') }}</p><button v-if="demo?.enabled" class="text-button" :disabled="starting || demo.at_capacity" @click="startDemo">{{ demo.at_capacity ? t('home.demoFull') : t('home.demoCta') }} →</button></article>
       <article><span>2</span><h3>{{ t('home.accessInstallTitle') }}</h3><p>{{ t('home.accessInstallText') }}</p><a class="text-button" href="https://github.com/Axxon/no-excuse#démarrage" target="_blank" rel="noopener noreferrer">{{ t('home.installCta') }} →</a></article>
-      <article><span>3</span><h3>{{ t('home.accessLoginTitle') }}</h3><p>{{ t('home.accessLoginText') }}</p><RouterLink class="text-button" to="/login">{{ t('home.loginCta') }} →</RouterLink></article>
+      <article v-if="demo && !demo.enabled"><span>3</span><h3>{{ t('home.accessLoginTitle') }}</h3><p>{{ t('home.accessLoginText') }}</p><RouterLink class="text-button" to="/login">{{ t('home.loginCta') }} →</RouterLink></article>
     </div>
   </section>
 
