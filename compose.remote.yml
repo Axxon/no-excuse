@@ -100,18 +100,26 @@ services:
   queue-intake:
     <<: *api
     command: php artisan queue:adaptive screening
+    healthcheck:
+      disable: true
 
   queue-scoring:
     <<: *api
     command: php artisan queue:adaptive scoring
+    healthcheck:
+      disable: true
 
   queue-notifications:
     <<: *api
     command: php artisan queue:work redis --queue=notifications --sleep=1 --tries=3 --timeout=60
+    healthcheck:
+      disable: true
 
   scheduler:
     <<: *api
     command: php artisan schedule:work
+    healthcheck:
+      disable: true
 
   web:
     image: ${NO_EXCUSE_WEB_IMAGE:-no-excuse-web:local}
