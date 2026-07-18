@@ -1,0 +1,10 @@
+title = "no-excuse secret scanning"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Generic ingestion key placeholder used only in API documentation"
+paths = ['''^docs/integration-api(?:\.en)?\.md$''']
+regexTarget = "match"
+regexes = ['''Authorization: Bearer INGESTION_KEY''']
