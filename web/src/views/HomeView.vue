@@ -36,7 +36,7 @@ async function joinWaitlist(): Promise<void> {
         <a class="button button-ghost" href="https://github.com/Axxon/no-excuse#démarrage" target="_blank" rel="noreferrer">{{ t('home.installCta') }}</a>
       </div>
       <p v-if="demo?.enabled" class="demo-promise">{{ t('home.demoPromise', { count: demo.candidate_count, hours: demo.lifetime_hours }) }}</p>
-      <p v-if="demo?.enabled" class="demo-capacity">{{ t('home.demoActiveSessions', { count: demo.active_sessions }) }}</p>
+      <p v-if="demo?.enabled" class="demo-capacity">{{ t('home.demoActiveSessions', { count: demo.active_sessions, max: demo.max_sessions }) }}</p>
       <p v-if="error" class="alert">{{ error }}</p>
       <form v-if="demo?.enabled && demo.at_capacity && !waitlistSent" class="waitlist-form" @submit.prevent="joinWaitlist"><label>{{ t('home.waitlistLead') }}<input v-model="waitlistEmail" required type="email" :placeholder="t('home.waitlistPlaceholder')" /></label><button class="button button-small" type="submit">{{ t('home.waitlistCta') }}</button></form>
       <p v-if="waitlistSent" class="success-line">{{ t('home.waitlistSuccess') }}</p>

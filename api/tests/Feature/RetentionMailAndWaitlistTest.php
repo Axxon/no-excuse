@@ -120,7 +120,7 @@ class RetentionMailAndWaitlistTest extends TestCase
 
         $this->getJson('/api/demo')
             ->assertOk()
-            ->assertJson(['active_sessions' => 1, 'at_capacity' => true]);
+            ->assertJson(['active_sessions' => 1, 'max_sessions' => 1, 'at_capacity' => true]);
 
         $this->postJson('/api/demo/sessions')->assertServiceUnavailable();
         $this->postJson('/api/demo/waitlist', ['email' => 'rh@example.test', 'locale' => 'fr'])->assertAccepted();

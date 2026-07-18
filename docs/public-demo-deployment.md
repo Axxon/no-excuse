@@ -38,7 +38,7 @@ curl -fsS https://demo.example.com/api/demo
 make demo-prod-ps
 ```
 
-La réponse publique doit indiquer `enabled: true`, `active_sessions` et `at_capacity`. La page principale affiche le nombre agrégé de sandboxes actuellement servies et ne présente aucun bouton de connexion à une instance d’entreprise. Tant que `at_capacity` vaut `false`, **Lancer la démo** crée immédiatement une sandbox sans demander d’e-mail, affiche 20 candidatures et fait évoluer leurs statuts pendant environ quarante secondes. Sur `/login`, ce lancement direct remplace le formulaire de connexion d’entreprise. La sandbox expose ensuite la configuration détaillée du backoffice en lecture seule ; le backend continue de refuser toute modification. Le formulaire de liste d’attente n’apparaît qu’à saturation.
+La réponse publique doit indiquer `enabled: true`, `active_sessions`, `max_sessions` et `at_capacity`. La page principale affiche le nombre agrégé de sandboxes actuellement servies avec la capacité maximale configurée et ne présente aucun bouton de connexion à une instance d’entreprise. Tant que `at_capacity` vaut `false`, **Lancer la démo** crée immédiatement une sandbox sans demander d’e-mail, affiche 20 candidatures et fait évoluer leurs statuts pendant environ quarante secondes. Sur `/login`, ce lancement direct remplace le formulaire de connexion d’entreprise. La sandbox expose ensuite la configuration détaillée du backoffice en lecture seule ; le backend continue de refuser toute modification. Le formulaire de liste d’attente n’apparaît qu’à saturation.
 
 ## Exploitation
 

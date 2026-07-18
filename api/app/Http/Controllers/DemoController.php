@@ -19,6 +19,7 @@ class DemoController extends Controller
             'candidate_count' => 20,
             'lifetime_hours' => (int) config('no-excuse.public_demo.lifetime_hours'),
             'active_sessions' => $activeSessions,
+            'max_sessions' => $sandbox->maxSessions(),
             'at_capacity' => $activeSessions >= $sandbox->maxSessions(),
         ]);
     }

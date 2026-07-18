@@ -53,6 +53,7 @@ class PublicDemoTest extends TestCase
                 'enabled' => true,
                 'candidate_count' => 20,
                 'active_sessions' => 2,
+                'max_sessions' => 3,
                 'at_capacity' => false,
             ]);
 

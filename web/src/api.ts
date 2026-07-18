@@ -3,7 +3,7 @@ export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:18080/a
 export interface User { uuid: string; name: string; email: string; role: string; organization: { uuid: string; name: string; is_demo: boolean; expires_at: string | null } | null }
 export interface AuthPayload { token: string; user: User }
 export interface SetupStatus { configured: boolean }
-export interface DemoStatus { enabled: boolean; candidate_count: number; lifetime_hours: number; active_sessions: number; at_capacity: boolean }
+export interface DemoStatus { enabled: boolean; candidate_count: number; lifetime_hours: number; active_sessions: number; max_sessions: number; at_capacity: boolean }
 export interface DemoSessionPayload extends AuthPayload { demo: { offer_uuid: string; expires_at: string } }
 export interface ProviderOption {
   key: string; label: string; defaults: { screening: string; scoring: string };
