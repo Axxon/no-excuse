@@ -57,9 +57,12 @@ On `no-excuse.pro`, **Try the demo** automatically creates a temporary recruiter
 
 AI credentials are server-side secrets. They are never entered or returned through the recruiter interface. The public demo replays deterministic fixtures locally and makes no paid AI call.
 
+> [!WARNING]
+> **TODO before any real-world use of live AI mode:** extracted CV text is not yet pseudonymized before it is sent to a remote AI provider. It may therefore contain the candidate's name, email address, phone number, postal address or other identifying data. A local, tested personal-data detection and masking layer, which blocks the remote call when it fails, must be added before processing real applications in production. Disabling provider-side request retention does not replace this protection.
+
 ## Security and fairness
 
-No public route lists an offer or application. Ingestion and login tokens are hashed, CV access is organization-scoped, prompts exclude sensitive/discriminatory criteria, and final selection remains human. In live AI mode, CV text is sent to the configured provider; operators must establish an appropriate data-processing and retention policy.
+No public route lists an offer or application. Ingestion and login tokens are hashed, CV access is organization-scoped, prompts exclude sensitive/discriminatory criteria, and final selection remains human. Local CV pseudonymization before calling a remote AI provider remains a production-blocking TODO. In live AI mode, CV text is sent to the configured provider; operators must establish an appropriate data-processing and retention policy.
 
 ## License
 
