@@ -43,7 +43,7 @@ class ScreenApplication implements ShouldBeUnique, ShouldQueue
 
         $application->update(['status' => 'screening', 'processing_stage' => 'screening', 'processing_error' => null]);
         $selectedAnalyzer = $application->offer->organization?->is_demo ? app(DemoCandidateAnalyzer::class) : $analyzer;
-        $result = $selectedAnalyzer->screen($application->offer, $extractor->extract($application->cv_path));
+        $result = $selectedAnalyzer->screen($application, $extractor->extract($application->cv_path));
         $application->update([
             'scope_score' => $result->score,
             'scope_reason' => $result->reason,

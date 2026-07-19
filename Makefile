@@ -97,14 +97,17 @@ mail-test:
 
 test:
 	COMPOSE_IGNORE_ORPHANS=true USER_ID=$(USER_ID) GROUP_ID=$(GROUP_ID) $(DOCKER) compose -p no-excuse-test -f compose.yml -f compose.test.yml run --rm --build api php artisan test $(TEST_ARGS)
+	COMPOSE_IGNORE_ORPHANS=true $(DOCKER) compose -p no-excuse-test -f compose.yml -f compose.test.yml run --rm --build --no-deps cv-pseudonymizer python -m unittest discover -s tests -v
 
 lint:
 	$(DOCKER) compose exec api vendor/bin/pint --test
 	$(DOCKER) compose exec web npm run build
+	$(DOCKER) compose run --rm --no-deps cv-pseudonymizer python -m unittest discover -s tests
 
 audit:
 	$(DOCKER) compose exec api composer audit --locked --no-interaction
 	$(DOCKER) compose exec web npm audit --audit-level=high
+	$(DOCKER) compose run --rm --no-deps cv-pseudonymizer python -m pip check
 
 validate: test lint audit
 

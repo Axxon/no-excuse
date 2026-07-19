@@ -5,13 +5,14 @@ namespace App\Services;
 use App\Contracts\CandidateAnalyzer;
 use App\Data\ScoringResult;
 use App\Data\ScreeningResult;
-use App\Models\JobOffer;
+use App\Models\Application;
 use Illuminate\Support\Str;
 
 class DemoCandidateAnalyzer implements CandidateAnalyzer
 {
-    public function screen(JobOffer $offer, string $cvText): ScreeningResult
+    public function screen(Application $application, string $cvText): ScreeningResult
     {
+        $offer = $application->offer;
         $keywords = $this->keywords(implode(' ', $offer->criteria));
         $candidate = $this->keywords($cvText);
         $matches = array_values(array_intersect($keywords, $candidate));
@@ -27,9 +28,9 @@ class DemoCandidateAnalyzer implements CandidateAnalyzer
         );
     }
 
-    public function score(JobOffer $offer, string $cvText): ScoringResult
+    public function score(Application $application, string $cvText): ScoringResult
     {
-        $screening = $this->screen($offer, $cvText);
+        $screening = $this->screen($application, $cvText);
         $content = Str::lower(Str::ascii($cvText));
         $experience = min(100, preg_match_all('/\b(20\d{2}|19\d{2})\b/', $content) * 12 + 35);
         $clarity = min(100, 45 + intdiv(strlen($content), 120));
