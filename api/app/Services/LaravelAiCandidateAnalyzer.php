@@ -6,8 +6,10 @@ use App\Contracts\CandidateAnalyzer;
 use App\Data\ScoringResult;
 use App\Data\ScreeningResult;
 use App\Models\Application;
+use Closure;
+use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Arr;
-use Laravel\Ai\AnonymousAgent;
+use Laravel\Ai\StructuredAnonymousAgent;
 use RuntimeException;
 
 class LaravelAiCandidateAnalyzer implements CandidateAnalyzer
@@ -22,6 +24,11 @@ class LaravelAiCandidateAnalyzer implements CandidateAnalyzer
             $this->promptBuilder->build($application, $cvText),
             $offer->screening_provider,
             $offer->screening_model ?: config('no-excuse.ai.defaults.'.$offer->screening_provider.'.screening'),
+            fn (JsonSchema $schema): array => [
+                'in_scope' => $schema->boolean()->required(),
+                'score' => $schema->number()->min(0)->max(100)->required(),
+                'reason' => $schema->string()->min(10)->max(2000)->required(),
+            ],
         );
 
         $inScope = Arr::get($data, 'in_scope');
@@ -37,11 +44,27 @@ class LaravelAiCandidateAnalyzer implements CandidateAnalyzer
     public function score(Application $application, string $cvText): ScoringResult
     {
         $offer = $application->offer;
+        $criteria = array_values(array_unique(array_filter(array_map(
+            fn (mixed $criterion): string => trim((string) $criterion),
+            $offer->criteria ?? [],
+        ))));
         $data = $this->ask(
-            $this->instructions($offer->organization?->scoring_prompt ?: config('no-excuse.prompts.scoring'), 'Réponds uniquement en JSON avec score, breakdown et summary. breakdown associe chaque critère à un score sur 100.'),
+            $this->instructions($offer->organization?->scoring_prompt ?: config('no-excuse.prompts.scoring'), 'Réponds uniquement selon le schéma demandé. breakdown associe exactement chaque critère annoncé à un score numérique sur 100.'),
             $this->promptBuilder->build($application, $cvText),
             $offer->scoring_provider,
             $offer->scoring_model ?: config('no-excuse.ai.defaults.'.$offer->scoring_provider.'.scoring'),
+            function (JsonSchema $schema) use ($criteria): array {
+                $breakdown = [];
+                foreach ($criteria as $criterion) {
+                    $breakdown[$criterion] = $schema->number()->min(0)->max(100)->required();
+                }
+
+                return [
+                    'score' => $schema->number()->min(0)->max(100)->required(),
+                    'breakdown' => $schema->object($breakdown)->withoutAdditionalProperties()->required(),
+                    'summary' => $schema->string()->min(10)->max(3000)->required(),
+                ];
+            },
         );
 
         $score = Arr::get($data, 'score');
@@ -61,17 +84,15 @@ class LaravelAiCandidateAnalyzer implements CandidateAnalyzer
     }
 
     /** @return array<string, mixed> */
-    private function ask(string $instructions, string $prompt, string $provider, string $model): array
+    private function ask(string $instructions, string $prompt, string $provider, string $model, Closure $schema): array
     {
-        $response = (new AnonymousAgent($instructions, [], []))->prompt(
+        $response = (new StructuredAnonymousAgent($instructions, [], [], $schema))->prompt(
             $prompt,
             provider: $provider,
             model: $model,
             timeout: 45,
         );
-        $json = trim($response->text, " \n\r\t`");
-        $json = preg_replace('/^json\s*/i', '', $json) ?? $json;
-        $data = json_decode($json, true);
+        $data = $response->toArray();
 
         if (! is_array($data)) {
             throw new RuntimeException('Le fournisseur IA a retourné une réponse non structurée.');

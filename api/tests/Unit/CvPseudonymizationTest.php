@@ -10,6 +10,7 @@ use App\Services\HttpCvPseudonymizer;
 use App\Services\LaravelAiCandidateAnalyzer;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Laravel\Ai\StructuredAnonymousAgent;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -102,5 +103,40 @@ class CvPseudonymizationTest extends TestCase
 
         (new LaravelAiCandidateAnalyzer(new CandidatePromptBuilder($pseudonymizer)))
             ->screen($application, 'Jean Dupont maîtrise Laravel.');
+    }
+
+    public function test_live_analyzer_uses_structured_scores_for_every_offer_criterion(): void
+    {
+        StructuredAnonymousAgent::fake([[
+            'score' => 84,
+            'breakdown' => ['Laravel' => 90, 'Vue' => 78],
+            'summary' => 'Le profil apporte des preuves professionnelles pertinentes.',
+        ]])->preventStrayPrompts();
+
+        $pseudonymizer = new class implements CvPseudonymizer
+        {
+            public function pseudonymize(string $text, string $candidateName, string $candidateEmail, array $professionalTerms = []): string
+            {
+                return '[CANDIDATE_NAME] maîtrise Laravel et Vue.';
+            }
+        };
+        $offer = new JobOffer([
+            'title' => 'Développeur',
+            'description' => 'Construire un produit.',
+            'criteria' => ['Laravel', 'Vue'],
+            'scoring_provider' => 'openai',
+            'scoring_model' => 'gpt-test',
+        ]);
+        $application = new Application([
+            'candidate_name' => 'Jean Dupont',
+            'candidate_email' => 'jean@example.test',
+        ]);
+        $application->setRelation('offer', $offer);
+
+        $result = (new LaravelAiCandidateAnalyzer(new CandidatePromptBuilder($pseudonymizer)))
+            ->score($application, 'Jean Dupont maîtrise Laravel et Vue.');
+
+        $this->assertSame(84.0, $result->score);
+        $this->assertSame(['Laravel' => 90.0, 'Vue' => 78.0], $result->breakdown);
     }
 }

@@ -36,7 +36,7 @@ async function joinWaitlist(): Promise<void> {
       <div class="actions">
         <button v-if="demo?.enabled" class="button" :disabled="starting || (demo.at_capacity && !accessToken)" @click="startDemo">{{ starting ? t('home.demoStarting') : (demo.at_capacity && !accessToken ? t('home.demoFull') : t('home.demoCta')) }}</button>
         <RouterLink v-if="demo && !demo.enabled" class="button button-ghost" to="/login">{{ t('home.recruiterCta') }}</RouterLink>
-        <a class="button button-ghost" href="https://github.com/Axxon/no-excuse#démarrage" target="_blank" rel="noreferrer">{{ t('home.installCta') }}</a>
+        <a v-if="demo?.enabled" class="button button-ghost" href="https://github.com/Axxon/no-excuse#démarrage" target="_blank" rel="noreferrer">{{ t('home.installCta') }}</a>
       </div>
       <p v-if="demo?.enabled" class="demo-promise">{{ t('home.demoPromise', { count: demo.candidate_count, hours: demo.lifetime_hours }) }}</p>
       <p v-if="demo?.enabled" class="demo-capacity">{{ demo.active_sessions > demo.max_sessions ? t('home.demoCapacityTransition', { count: demo.active_sessions, max: demo.max_sessions }) : t('home.demoActiveSessions', { count: demo.active_sessions, max: demo.max_sessions }) }}</p>
@@ -58,7 +58,7 @@ async function joinWaitlist(): Promise<void> {
     </div>
   </section>
 
-  <section class="access-paths page-section">
+  <section v-if="demo?.enabled" class="access-paths page-section">
     <div class="section-title"><div><span class="eyebrow">{{ t('home.accessEyebrow') }}</span><h2>{{ t(demo?.enabled ? 'home.accessPublicTitle' : 'home.accessTitle') }}</h2></div></div>
     <div class="access-grid">
       <article><span>1</span><h3>{{ t('home.accessDemoTitle') }}</h3><p>{{ t('home.accessDemoText') }}</p><button v-if="demo?.enabled" class="text-button" :disabled="starting || (demo.at_capacity && !accessToken)" @click="startDemo">{{ demo.at_capacity && !accessToken ? t('home.demoFull') : t('home.demoCta') }} →</button></article>
