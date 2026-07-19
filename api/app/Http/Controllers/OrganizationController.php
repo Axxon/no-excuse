@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\MailConfigurationTest;
 use App\Mail\TeamInvitationMail;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -51,6 +52,27 @@ class OrganizationController extends Controller
             ->map(fn (User $user): array => $this->memberPayload($user));
 
         return response()->json(['data' => $members]);
+    }
+
+    public function sendTestMail(Request $request): JsonResponse
+    {
+        abort_unless($request->user()->canManageTeam(), 403, 'Cette action est réservée aux responsables.');
+        abort_if($request->user()->organization->is_demo, 403, 'La démonstration n’envoie aucun e-mail.');
+
+        $organization = $request->user()->organization;
+
+        try {
+            Mail::to($request->user()->email)->send(new MailConfigurationTest(
+                $organization->notification_sender_name,
+                $organization->notification_reply_to,
+            ));
+        } catch (Throwable $exception) {
+            logger()->warning('Mail configuration test failed.', ['exception_class' => $exception::class]);
+
+            return response()->json(['message' => 'L’e-mail de test n’a pas pu être envoyé. Vérifiez la configuration du transport.'], 503);
+        }
+
+        return response()->json(['message' => 'E-mail de test envoyé à votre adresse.']);
     }
 
     public function storeMember(Request $request): JsonResponse

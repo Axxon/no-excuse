@@ -42,6 +42,8 @@ Rechargez les services (`make restart`), puis vérifiez sans afficher aucun secr
 make mail-test EMAIL=votre-adresse@example.com
 ```
 
+Un responsable ou administrateur peut également lancer ce contrôle depuis **Configuration → Tester l’envoi d’e-mails**. Le destinataire est toujours l’adresse de son propre compte RH et la fonction est désactivée dans les sandboxes de démonstration.
+
 Le succès signifie que le transport a accepté le message ; contrôlez aussi sa réception. Configurez SPF, DKIM et DMARC sur le domaine d’envoi. Le worker `notifications` doit rester actif. Chaque décision possède un identifiant de message stable et un verrou d’envoi. Un échec explicite est affiché et peut être relancé. Un envoi resté dans un état ambigu après une coupure devient **E-mail à vérifier** au lieu d’être renvoyé automatiquement : contrôlez le fournisseur SMTP, puis utilisez la reprise manuelle afin d’éviter un doublon. Le CV rejeté n’est purgé qu’après un envoi réussi.
 
 Le même transport sert les invitations d’équipe, la réinitialisation du mot de passe, les codes MFA et les alertes de disponibilité. Testez donc le mail avant d’inviter l’équipe. Les invitations expirent après 24 heures et peuvent être renvoyées depuis **Configuration**. La démo ne transmet jamais d’e-mail aux faux candidats ; seul l’e-mail opt-in de disponibilité peut partir si un vrai transport est configuré.
