@@ -73,6 +73,15 @@ async function joinWaitlist(): Promise<void> {
     <article><strong>{{ t('home.metricThree') }}</strong><p>{{ t('home.metricThreeText') }}</p></article>
   </section>
 
+  <section class="privacy-card page-section">
+    <div class="privacy-mark" aria-hidden="true">✓</div>
+    <div>
+      <span class="eyebrow">{{ t('home.privacyEyebrow') }}</span>
+      <h2>{{ t('home.privacyTitle') }}</h2>
+      <p>{{ t('home.privacyText') }}</p>
+    </div>
+  </section>
+
   <section class="workflow page-section">
     <span class="eyebrow">{{ t('home.workflow') }}</span>
     <div class="workflow-grid">
