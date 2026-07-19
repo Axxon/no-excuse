@@ -2,7 +2,6 @@
 
 namespace Tests\Unit;
 
-use App\Contracts\CvPseudonymizer;
 use App\Models\Application;
 use App\Models\JobOffer;
 use App\Services\CandidatePromptBuilder;
@@ -24,6 +23,7 @@ class CvPseudonymizationTest extends TestCase
                 'pseudonymized_text' => '[CANDIDATE_NAME] maîtrise Laravel.',
                 'entity_counts' => ['CANDIDATE_NAME' => 1],
                 'model' => 'xx_ent_wiki_sm',
+                'version' => 'presidio-spacy-v1',
             ]),
         ]);
 
@@ -33,7 +33,8 @@ class CvPseudonymizationTest extends TestCase
             'jean@example.test',
         );
 
-        $this->assertSame('[CANDIDATE_NAME] maîtrise Laravel.', $result);
+        $this->assertSame('[CANDIDATE_NAME] maîtrise Laravel.', $result->text);
+        $this->assertSame('presidio-spacy-v1', $result->version);
         Http::assertSent(fn (Request $request): bool => $request->url() === 'http://cv-pseudonymizer:8080/anonymize'
             && $request['candidate_name'] === 'Jean Dupont'
             && $request['candidate_email'] === 'jean@example.test');
@@ -51,13 +52,6 @@ class CvPseudonymizationTest extends TestCase
 
     public function test_candidate_prompt_contains_pseudonymized_content_only(): void
     {
-        $pseudonymizer = new class implements CvPseudonymizer
-        {
-            public function pseudonymize(string $text, string $candidateName, string $candidateEmail, array $professionalTerms = []): string
-            {
-                return '[CANDIDATE_NAME] maîtrise Laravel et Vue.';
-            }
-        };
         $offer = new JobOffer([
             'title' => 'Développeur',
             'description' => 'Construire un produit.',
@@ -69,40 +63,11 @@ class CvPseudonymizationTest extends TestCase
         ]);
         $application->setRelation('offer', $offer);
 
-        $prompt = (new CandidatePromptBuilder($pseudonymizer))->build($application, 'Jean Dupont, jean@example.test');
+        $prompt = (new CandidatePromptBuilder)->build($application, '[CANDIDATE_NAME] maîtrise Laravel et Vue.');
 
         $this->assertStringContainsString('[CANDIDATE_NAME]', $prompt);
         $this->assertStringNotContainsString('Jean Dupont', $prompt);
         $this->assertStringNotContainsString('jean@example.test', $prompt);
-    }
-
-    public function test_live_analyzer_stops_before_provider_when_pseudonymization_throws(): void
-    {
-        $pseudonymizer = new class implements CvPseudonymizer
-        {
-            public function pseudonymize(string $text, string $candidateName, string $candidateEmail, array $professionalTerms = []): string
-            {
-                throw new RuntimeException('Pseudonymisation impossible.');
-            }
-        };
-        $offer = new JobOffer([
-            'title' => 'Développeur',
-            'description' => 'Construire un produit.',
-            'criteria' => ['Laravel'],
-            'screening_provider' => 'openai',
-            'screening_model' => 'gpt-test',
-        ]);
-        $application = new Application([
-            'candidate_name' => 'Jean Dupont',
-            'candidate_email' => 'jean@example.test',
-        ]);
-        $application->setRelation('offer', $offer);
-
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Pseudonymisation impossible.');
-
-        (new LaravelAiCandidateAnalyzer(new CandidatePromptBuilder($pseudonymizer)))
-            ->screen($application, 'Jean Dupont maîtrise Laravel.');
     }
 
     public function test_live_analyzer_uses_structured_scores_for_every_offer_criterion(): void
@@ -113,13 +78,6 @@ class CvPseudonymizationTest extends TestCase
             'summary' => 'Le profil apporte des preuves professionnelles pertinentes.',
         ]])->preventStrayPrompts();
 
-        $pseudonymizer = new class implements CvPseudonymizer
-        {
-            public function pseudonymize(string $text, string $candidateName, string $candidateEmail, array $professionalTerms = []): string
-            {
-                return '[CANDIDATE_NAME] maîtrise Laravel et Vue.';
-            }
-        };
         $offer = new JobOffer([
             'title' => 'Développeur',
             'description' => 'Construire un produit.',
@@ -133,8 +91,8 @@ class CvPseudonymizationTest extends TestCase
         ]);
         $application->setRelation('offer', $offer);
 
-        $result = (new LaravelAiCandidateAnalyzer(new CandidatePromptBuilder($pseudonymizer)))
-            ->score($application, 'Jean Dupont maîtrise Laravel et Vue.');
+        $result = (new LaravelAiCandidateAnalyzer(new CandidatePromptBuilder))
+            ->score($application, '[CANDIDATE_NAME] maîtrise Laravel et Vue.');
 
         $this->assertSame(84.0, $result->score);
         $this->assertSame(['Laravel' => 90.0, 'Vue' => 78.0], $result->breakdown);

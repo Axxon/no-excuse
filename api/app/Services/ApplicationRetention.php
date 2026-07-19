@@ -26,6 +26,9 @@ class ApplicationRetention
             'cv_path' => null,
             'cv_original_name' => null,
             'cv_deleted_at' => now(),
+            'pseudonymized_cv_text' => null,
+            'pseudonymization_version' => null,
+            'pseudonymized_at' => null,
         ]);
         $application->events()->create([
             'type' => 'cv_deleted_by_retention',
@@ -106,6 +109,9 @@ class ApplicationRetention
             'cv_path' => null,
             'cv_original_name' => null,
             'cv_deleted_at' => $application->cv_deleted_at ?? now(),
+            'pseudonymized_cv_text' => null,
+            'pseudonymization_version' => null,
+            'pseudonymized_at' => null,
             'personal_data_deleted_at' => now(),
         ]);
         $application->events()->create(['type' => 'personal_data_anonymized', 'metadata' => ['policy' => 'candidate_data']]);
@@ -122,7 +128,14 @@ class ApplicationRetention
             return false;
         }
         Storage::disk('local')->delete($application->cv_path);
-        $application->update(['cv_path' => null, 'cv_original_name' => null, 'cv_deleted_at' => now()]);
+        $application->update([
+            'cv_path' => null,
+            'cv_original_name' => null,
+            'cv_deleted_at' => now(),
+            'pseudonymized_cv_text' => null,
+            'pseudonymization_version' => null,
+            'pseudonymized_at' => null,
+        ]);
         $application->events()->create(['type' => 'cv_deleted_by_retention', 'metadata' => ['policy' => $policy]]);
 
         return true;

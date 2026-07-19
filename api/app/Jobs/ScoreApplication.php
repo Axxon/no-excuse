@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Contracts\CandidateAnalyzer;
 use App\Models\Application;
+use App\Services\CanonicalCvText;
 use App\Services\CvTextExtractor;
 use App\Services\DemoCandidateAnalyzer;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -31,7 +32,7 @@ class ScoreApplication implements ShouldBeUnique, ShouldQueue
         return (string) $this->applicationId;
     }
 
-    public function handle(CandidateAnalyzer $analyzer, CvTextExtractor $extractor): void
+    public function handle(CandidateAnalyzer $analyzer, CanonicalCvText $canonicalCv, CvTextExtractor $extractor): void
     {
         $application = Application::query()->with('offer.organization')->find($this->applicationId);
         if (! $application) {
@@ -42,8 +43,10 @@ class ScoreApplication implements ShouldBeUnique, ShouldQueue
         }
 
         $application->update(['status' => 'scoring', 'processing_stage' => 'scoring', 'processing_error' => null]);
-        $selectedAnalyzer = $application->offer->organization?->is_demo ? app(DemoCandidateAnalyzer::class) : $analyzer;
-        $result = $selectedAnalyzer->score($application, $extractor->extract($application->cv_path));
+        $isDemo = $application->offer->organization?->is_demo;
+        $selectedAnalyzer = $isDemo ? app(DemoCandidateAnalyzer::class) : $analyzer;
+        $cvText = $isDemo ? $extractor->extract($application->cv_path) : $canonicalCv->for($application);
+        $result = $selectedAnalyzer->score($application, $cvText);
         $application->update([
             'status' => 'scored',
             'final_score' => $result->score,
