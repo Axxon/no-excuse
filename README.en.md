@@ -57,7 +57,7 @@ On `no-excuse.pro`, **Try the demo** automatically creates a temporary recruiter
 
 AI credentials are server-side secrets. They are never entered or returned through the recruiter interface. The public demo replays deterministic fixtures locally and makes no paid AI call.
 
-Before every live AI call, extracted text must pass through the local `cv-pseudonymizer` service. It masks the application's known identity, contact details, personal URLs, addresses, birth dates and person/location entities detected by Presidio and spaCy. Professional offer criteria are protected from NER false positives. The service stores nothing, logs no document content and has no outbound network access at runtime. An unavailable service or invalid response blocks the remote AI call.
+After the first extraction in live mode, text passes once through the local `cv-pseudonymizer` service. It masks the application's known identity, contact details, personal URLs, addresses, birth dates and person/location entities detected by Presidio and spaCy. Laravel encrypts and stores this canonical copy with the pseudonymizer version; screening and scoring then read exactly the same copy. The pseudonymization service itself stores nothing, logs no document content and has no outbound network access at runtime. An unavailable service or invalid response blocks every remote AI call.
 
 This is pseudonymization rather than irreversible anonymization: the original CV and a distinctive career history may still identify a person. It reduces transmitted data but does not replace candidate information, a data-processing agreement or representative-corpus auditing.
 

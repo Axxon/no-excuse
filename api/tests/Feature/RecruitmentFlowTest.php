@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Contracts\CandidateAnalyzer;
+use App\Contracts\CvPseudonymizer;
+use App\Data\PseudonymizationResult;
 use App\Data\ScoringResult;
 use App\Data\ScreeningResult;
 use App\Jobs\ScoreApplication;
@@ -11,11 +13,13 @@ use App\Jobs\SendCandidateDecision;
 use App\Models\Application;
 use App\Models\JobOffer;
 use App\Models\User;
+use App\Services\CanonicalCvText;
 use App\Services\CvTextExtractor;
 use App\Services\DemoCvPdf;
 use App\Services\FinalizeOffer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
@@ -24,6 +28,18 @@ use Tests\TestCase;
 class RecruitmentFlowTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->app->bind(CvPseudonymizer::class, fn () => new class implements CvPseudonymizer
+        {
+            public function pseudonymize(string $text, string $candidateName, string $candidateEmail, array $professionalTerms = []): PseudonymizationResult
+            {
+                return new PseudonymizationResult('[CANDIDATE_NAME] présente une expérience Laravel et Vue.', 'test-v1');
+            }
+        });
+    }
 
     public function test_first_recruiter_can_install_the_company_and_configure_two_ai_providers(): void
     {
@@ -168,28 +184,61 @@ class RecruitmentFlowTest extends TestCase
         Storage::fake('local');
         $application = $this->application();
         Storage::disk('local')->put($application->cv_path, app(DemoCvPdf::class)->render($this->candidateData(), 0));
-        $this->app->bind(CandidateAnalyzer::class, fn () => new class implements CandidateAnalyzer
+        $pseudonymizer = new class implements CvPseudonymizer
         {
+            public int $calls = 0;
+
+            public function pseudonymize(string $text, string $candidateName, string $candidateEmail, array $professionalTerms = []): PseudonymizationResult
+            {
+                $this->calls++;
+
+                return new PseudonymizationResult('[CANDIDATE_NAME] présente une expérience Laravel et Vue.', 'test-v1');
+            }
+        };
+        $analyzer = new class implements CandidateAnalyzer
+        {
+            /** @var list<string> */
+            public array $receivedTexts = [];
+
             public function screen(Application $application, string $cvText): ScreeningResult
             {
+                $this->receivedTexts[] = $cvText;
+
                 return new ScreeningResult(true, 82.5, 'Compétences principales présentes.');
             }
 
             public function score(Application $application, string $cvText): ScoringResult
             {
+                $this->receivedTexts[] = $cvText;
+
                 return new ScoringResult(88.4, ['adéquation' => 90.0, 'expérience' => 84.0], 'Profil solide et pertinent.');
             }
-        });
+        };
+        $this->app->instance(CvPseudonymizer::class, $pseudonymizer);
+        $this->app->instance(CandidateAnalyzer::class, $analyzer);
 
-        (new ScreenApplication($application->id))->handle(app(CandidateAnalyzer::class), app(CvTextExtractor::class));
+        (new ScreenApplication($application->id))->handle($analyzer, app(CanonicalCvText::class), app(CvTextExtractor::class));
         $this->assertSame('qualified', $application->fresh()->status);
         Queue::assertPushed(ScoreApplication::class);
 
-        (new ScoreApplication($application->id))->handle(app(CandidateAnalyzer::class), app(CvTextExtractor::class));
+        (new ScoreApplication($application->id))->handle($analyzer, app(CanonicalCvText::class), app(CvTextExtractor::class));
         $application->refresh();
         $this->assertSame('scored', $application->status);
         $this->assertSame(88.4, $application->final_score);
         $this->assertSame('Profil solide et pertinent.', $application->ai_summary);
+        $this->assertSame(1, $pseudonymizer->calls);
+        $this->assertSame([
+            '[CANDIDATE_NAME] présente une expérience Laravel et Vue.',
+            '[CANDIDATE_NAME] présente une expérience Laravel et Vue.',
+        ], $analyzer->receivedTexts);
+        $this->assertSame('test-v1', $application->pseudonymization_version);
+        $this->assertNotNull($application->pseudonymized_at);
+        $this->assertNotSame(
+            $application->pseudonymized_cv_text,
+            DB::table('applications')->where('id', $application->id)->value('pseudonymized_cv_text'),
+        );
+        $this->assertDatabaseCount('application_events', 3);
+        $this->assertDatabaseHas('application_events', ['application_id' => $application->id, 'type' => 'cv_pseudonymized']);
     }
 
     public function test_out_of_scope_screening_requires_human_confirmation_before_email(): void
@@ -214,7 +263,7 @@ class RecruitmentFlowTest extends TestCase
             }
         });
 
-        (new ScreenApplication($application->id))->handle(app(CandidateAnalyzer::class), app(CvTextExtractor::class));
+        (new ScreenApplication($application->id))->handle(app(CandidateAnalyzer::class), app(CanonicalCvText::class), app(CvTextExtractor::class));
 
         $application->refresh();
         $this->assertSame('rejection_proposed', $application->status);
@@ -235,6 +284,48 @@ class RecruitmentFlowTest extends TestCase
                 'scope_reason' => $reason,
                 'notification_status' => 'pending',
             ]);
+    }
+
+    public function test_pseudonymization_failure_prevents_remote_analysis(): void
+    {
+        Storage::fake('local');
+        $application = $this->application();
+        Storage::disk('local')->put($application->cv_path, app(DemoCvPdf::class)->render($this->candidateData(), 0));
+        $this->app->instance(CvPseudonymizer::class, new class implements CvPseudonymizer
+        {
+            public function pseudonymize(string $text, string $candidateName, string $candidateEmail, array $professionalTerms = []): PseudonymizationResult
+            {
+                throw new \RuntimeException('Pseudonymisation impossible.');
+            }
+        });
+        $analyzer = new class implements CandidateAnalyzer
+        {
+            public int $calls = 0;
+
+            public function screen(Application $application, string $cvText): ScreeningResult
+            {
+                $this->calls++;
+
+                throw new \LogicException('Le fournisseur distant ne doit pas être appelé.');
+            }
+
+            public function score(Application $application, string $cvText): ScoringResult
+            {
+                $this->calls++;
+
+                throw new \LogicException('Le fournisseur distant ne doit pas être appelé.');
+            }
+        };
+
+        try {
+            (new ScreenApplication($application->id))->handle($analyzer, app(CanonicalCvText::class), app(CvTextExtractor::class));
+            $this->fail('La pseudonymisation aurait dû interrompre le traitement.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('Pseudonymisation impossible.', $exception->getMessage());
+        }
+
+        $this->assertSame(0, $analyzer->calls);
+        $this->assertNull($application->fresh()->pseudonymized_cv_text);
     }
 
     public function test_closure_waits_for_all_reviews_and_scores_before_building_top_ten(): void

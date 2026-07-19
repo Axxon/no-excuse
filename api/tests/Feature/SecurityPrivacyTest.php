@@ -147,7 +147,13 @@ class SecurityPrivacyTest extends TestCase
     public function test_candidate_personal_data_can_be_anonymized_after_final_decision(): void
     {
         Storage::fake('local');
-        $application = $this->application(['status' => 'rejected_final', 'cover_letter' => 'Privé']);
+        $application = $this->application([
+            'status' => 'rejected_final',
+            'cover_letter' => 'Privé',
+            'pseudonymized_cv_text' => '[CANDIDATE_NAME] maîtrise PHP.',
+            'pseudonymization_version' => 'test-v1',
+            'pseudonymized_at' => now(),
+        ]);
         Storage::disk('local')->put($application->cv_path, '%PDF-test');
         $annotation = $application->annotations()->make(['body' => 'Note privée']);
         $annotation->user()->associate($application->offer->recruiter);
@@ -158,6 +164,7 @@ class SecurityPrivacyTest extends TestCase
         $this->assertSame('Candidat supprimé', $application->candidate_name);
         $this->assertNull($application->cover_letter);
         $this->assertNull($application->cv_path);
+        $this->assertNull($application->pseudonymized_cv_text);
         $this->assertNotNull($application->personal_data_deleted_at);
         $this->assertDatabaseMissing('application_annotations', ['application_id' => $application->id]);
     }

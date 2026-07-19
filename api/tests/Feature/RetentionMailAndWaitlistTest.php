@@ -40,6 +40,8 @@ class RetentionMailAndWaitlistTest extends TestCase
         $application = $offer->applications()->create([
             'candidate_name' => 'Test Candidate', 'candidate_email' => 'candidate@example.test',
             'cv_path' => $path, 'cv_original_name' => 'cv.pdf', 'status' => 'rejected_final',
+            'pseudonymized_cv_text' => '[CANDIDATE_NAME] maîtrise PHP.',
+            'pseudonymization_version' => 'test-v1', 'pseudonymized_at' => now(),
             'scope_score' => 80, 'final_score' => 72, 'notified_at' => now(),
             'status_token_hash' => hash('sha256', 'token'),
         ]);
@@ -48,6 +50,9 @@ class RetentionMailAndWaitlistTest extends TestCase
         Storage::disk('local')->assertMissing($path);
         $application->refresh();
         $this->assertNull($application->cv_path);
+        $this->assertNull($application->pseudonymized_cv_text);
+        $this->assertNull($application->pseudonymization_version);
+        $this->assertNull($application->pseudonymized_at);
         $this->assertSame('rejected_final', $application->status);
         $this->assertSame(72.0, $application->final_score);
         $this->assertDatabaseHas('application_events', ['application_id' => $application->id, 'type' => 'cv_deleted_by_retention']);
