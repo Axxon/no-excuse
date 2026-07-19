@@ -14,6 +14,7 @@ class Application extends Model
 
     protected $fillable = [
         'candidate_name', 'candidate_email', 'cv_path', 'cv_original_name', 'cover_letter',
+        'pseudonymized_cv_text', 'pseudonymization_version', 'pseudonymized_at',
         'source', 'external_reference',
         'status', 'scope_score', 'scope_reason', 'final_score', 'score_breakdown',
         'ai_summary', 'candidate_feedback', 'recruiter_rank', 'read_at', 'selected_at', 'notified_at', 'cv_deleted_at', 'status_token_hash',
@@ -22,7 +23,7 @@ class Application extends Model
         'personal_data_deleted_at',
     ];
 
-    protected $hidden = ['id', 'job_offer_id', 'status_token_hash', 'cv_path'];
+    protected $hidden = ['id', 'job_offer_id', 'status_token_hash', 'cv_path', 'pseudonymized_cv_text', 'pseudonymization_version'];
 
     protected static function booted(): void
     {
@@ -37,7 +38,8 @@ class Application extends Model
             'scope_score' => 'float', 'final_score' => 'float', 'score_breakdown' => 'array',
             'read_at' => 'datetime', 'selected_at' => 'datetime', 'notified_at' => 'datetime', 'cv_deleted_at' => 'datetime',
             'screening_reviewed_at' => 'datetime', 'notification_attempted_at' => 'datetime',
-            'personal_data_deleted_at' => 'datetime',
+            'personal_data_deleted_at' => 'datetime', 'pseudonymized_at' => 'datetime',
+            'pseudonymized_cv_text' => 'encrypted',
         ];
     }
 

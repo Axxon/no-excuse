@@ -11,6 +11,7 @@ from presidio_anonymizer.entities import OperatorConfig
 
 
 MODEL_NAME = "xx_ent_wiki_sm"
+PSEUDONYMIZATION_VERSION = "presidio-spacy-v1"
 MAX_TEXT_LENGTH = 200_000
 
 nlp_configuration = {
@@ -53,6 +54,7 @@ class AnonymizeResponse(BaseModel):
     pseudonymized_text: str
     entity_counts: dict[str, int]
     model: str
+    version: str
 
 
 ENTITY_PATTERNS = {
@@ -85,7 +87,7 @@ OPERATORS = {
 
 @api.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok", "model": MODEL_NAME}
+    return {"status": "ok", "model": MODEL_NAME, "version": PSEUDONYMIZATION_VERSION}
 
 
 @api.post("/anonymize", response_model=AnonymizeResponse)
@@ -113,6 +115,7 @@ def anonymize(payload: AnonymizeRequest) -> AnonymizeResponse:
         pseudonymized_text=output,
         entity_counts=dict(Counter(result.entity_type for result in results)),
         model=MODEL_NAME,
+        version=PSEUDONYMIZATION_VERSION,
     )
 
 

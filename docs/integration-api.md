@@ -33,7 +33,7 @@ Champs :
 | `cv` | oui | PDF non chiffré uniquement (`application/pdf`), 10 Mio et 100 pages max. |
 | `cover_letter` | non | texte, 10 000 caractères max. |
 
-Le nom et l'adresse e-mail transmis séparément servent aussi à pseudonymiser le texte extrait du CV avant toute analyse IA en mode `live`. Le service local masque leurs variantes ainsi que d'autres coordonnées et entités personnelles. Si cette étape échoue, la candidature passe en échec de traitement et aucun appel au fournisseur IA n'est effectué ; elle peut ensuite être relancée par un RH après correction. Le PDF original reste privé et n'est jamais transmis au fournisseur par ce pipeline.
+Le nom et l'adresse e-mail transmis séparément servent aussi à pseudonymiser une seule fois le texte extrait du CV, avant toute analyse IA en mode `live`. Le service local masque leurs variantes ainsi que d'autres coordonnées et entités personnelles. Laravel stocke le résultat canonique sous forme chiffrée, avec la version du pseudonymiseur et la date du traitement ; le filtrage, le scoring et leurs éventuelles reprises utilisent cette même copie sans relire ni retransmettre le texte brut. Si cette préparation échoue, la candidature passe en échec de traitement et aucun appel au fournisseur IA n'est effectué ; elle peut ensuite être relancée par un RH après correction. Le PDF original reste privé et n'est jamais transmis au fournisseur par ce pipeline. La copie pseudonymisée est supprimée avec le CV selon sa politique de rétention.
 
 Réponse initiale, HTTP 202 :
 

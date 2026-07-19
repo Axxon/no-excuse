@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Contracts\CvPseudonymizer;
+use App\Data\PseudonymizationResult;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -10,7 +11,7 @@ use Throwable;
 
 class HttpCvPseudonymizer implements CvPseudonymizer
 {
-    public function pseudonymize(string $text, string $candidateName, string $candidateEmail, array $professionalTerms = []): string
+    public function pseudonymize(string $text, string $candidateName, string $candidateEmail, array $professionalTerms = []): PseudonymizationResult
     {
         try {
             $response = Http::acceptJson()
@@ -32,10 +33,12 @@ class HttpCvPseudonymizer implements CvPseudonymizer
         }
 
         $pseudonymized = $response->json('pseudonymized_text');
-        if (! is_string($pseudonymized) || trim($pseudonymized) === '' || mb_strlen($pseudonymized) > 220000) {
+        $version = $response->json('version');
+        if (! is_string($pseudonymized) || trim($pseudonymized) === '' || mb_strlen($pseudonymized) > 220000
+            || ! is_string($version) || ! preg_match('/^[a-z0-9][a-z0-9._-]{0,79}$/i', $version)) {
             throw new RuntimeException('Le service local de pseudonymisation a retourné un résultat invalide. Aucun appel IA distant n’a été effectué.');
         }
 
-        return $pseudonymized;
+        return new PseudonymizationResult($pseudonymized, $version);
     }
 }

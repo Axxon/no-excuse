@@ -10,6 +10,8 @@ sequenceDiagram
     participant X as LinkedIn / ATS / site carrière
     participant API as API no-excuse
     participant Q1 as Queue de filtrage
+    participant P as Pseudonymiseur local
+    participant S as Stockage chiffré
     participant IA1 as IA économique
     participant Q2 as Queue de scoring
     participant IA2 as IA fine
@@ -19,17 +21,28 @@ sequenceDiagram
     X->>API: POST CV + identité + référence externe
     API-->>X: 202 + référence no-excuse
     API->>Q1: Enregistre la candidature dans le catalogue privé
-    Q1->>IA1: Vérifie l'adéquation à l'offre
-    alt Hors périmètre
-        IA1-->>API: Proposition de rejet motivée
-        API-->>RH: Demande une confirmation humaine
-        RH->>API: Confirme le rejet ou poursuit l'analyse
-        API-->>C: Si confirmé, réponse immédiate expliquée
-    else Pertinente
-        IA1->>Q2: Transmet la candidature qualifiée
-        Q2->>IA2: Analyse selon les critères RH
-        IA2-->>API: Score, détail et synthèse
-        API-->>RH: Met à jour le catalogue privé
+    Q1->>P: Envoie le texte extrait pour une pseudonymisation unique
+    alt Échec de la pseudonymisation locale
+        P--xQ1: Bloque le traitement avant toute IA distante
+        Q1-->>RH: Signale une analyse à relancer
+    else Copie canonique prête
+        P-->>Q1: Retourne le texte pseudonymisé et sa version
+        Q1->>S: Chiffre et stocke la copie canonique
+        S-->>Q1: Confirme le stockage
+        Q1->>IA1: Vérifie l'adéquation à l'offre
+        alt Hors périmètre
+            IA1-->>API: Proposition de rejet motivée
+            API-->>RH: Demande une confirmation humaine
+            RH->>API: Confirme le rejet ou poursuit l'analyse
+            API-->>C: Si confirmé, réponse immédiate expliquée
+        else Pertinente
+            Q1->>Q2: Transmet la candidature qualifiée
+            Q2->>S: Relit la même copie canonique
+            S-->>Q2: Texte pseudonymisé uniquement
+            Q2->>IA2: Analyse selon les critères RH
+            IA2-->>API: Score, détail et synthèse
+            API-->>RH: Met à jour le catalogue privé
+        end
     end
     API-->>RH: À la clôture, présente le top 10
     RH->>API: Lit, annote, réordonne et sélectionne
@@ -118,7 +131,7 @@ Le service source envoie un formulaire multipart avec `source`, `external_refere
 
 Le mode `demo` est actif par défaut : il est local, gratuit, déterministe et ne transmet aucun CV. Le mode `live` s’active avec `NO_EXCUSE_AI_MODE=live` et la clé du fournisseur concerné.
 
-Avant chaque appel en mode `live`, le texte extrait passe obligatoirement par le microservice local `cv-pseudonymizer`. Il masque d'abord l'identité connue de la candidature, puis les coordonnées, URLs personnelles, adresses, dates de naissance et entités personne/localisation détectées par Presidio et spaCy. Les critères professionnels de l'offre sont protégés des faux positifs du NER. Le service ne conserve rien, ne journalise pas les documents et n'a aucun accès réseau sortant à l'exécution. Une indisponibilité ou une réponse invalide bloque l'appel IA distant.
+Après la première extraction en mode `live`, le texte passe une seule fois par le microservice local `cv-pseudonymizer`. Il masque d'abord l'identité connue de la candidature, puis les coordonnées, URLs personnelles, adresses, dates de naissance et entités personne/localisation détectées par Presidio et spaCy. Laravel chiffre et conserve cette copie canonique avec la version du pseudonymiseur ; le filtrage et le scoring relisent ensuite exactement la même copie. Le service de pseudonymisation ne conserve rien, ne journalise pas les documents et n'a aucun accès réseau sortant à l'exécution. Une indisponibilité ou une réponse invalide bloque tout appel IA distant.
 
 Cette mesure est une pseudonymisation et non une anonymisation irréversible : le CV original et une trajectoire professionnelle peuvent toujours permettre d'identifier une personne. Elle réduit les données transmises mais ne dispense ni d'un accord de traitement, ni de l'information des candidats, ni d'un audit sur un corpus représentatif.
 

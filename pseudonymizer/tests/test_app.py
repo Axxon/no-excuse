@@ -35,7 +35,11 @@ class PseudonymizerTest(unittest.TestCase):
         self.assertIn("PHP, PostgreSQL et Docker depuis 2019", response.pseudonymized_text)
 
     def test_health_exposes_no_document_data(self) -> None:
-        self.assertEqual({"status": "ok", "model": "xx_ent_wiki_sm"}, health())
+        self.assertEqual({
+            "status": "ok",
+            "model": "xx_ent_wiki_sm",
+            "version": "presidio-spacy-v1",
+        }, health())
 
 
 if __name__ == "__main__":
