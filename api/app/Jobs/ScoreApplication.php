@@ -43,7 +43,7 @@ class ScoreApplication implements ShouldBeUnique, ShouldQueue
 
         $application->update(['status' => 'scoring', 'processing_stage' => 'scoring', 'processing_error' => null]);
         $selectedAnalyzer = $application->offer->organization?->is_demo ? app(DemoCandidateAnalyzer::class) : $analyzer;
-        $result = $selectedAnalyzer->score($application->offer, $extractor->extract($application->cv_path));
+        $result = $selectedAnalyzer->score($application, $extractor->extract($application->cv_path));
         $application->update([
             'status' => 'scored',
             'final_score' => $result->score,

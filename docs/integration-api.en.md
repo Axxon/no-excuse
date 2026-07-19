@@ -22,6 +22,8 @@ curl --request POST 'https://no-excuse.example/api/v1/intake/OFFER_UUID/applicat
 
 Required fields are `source` (max 80), `external_reference` (max 190), `candidate_name` (max 160), a valid `candidate_email`, and an unencrypted PDF-only `cv` (`application/pdf`) up to 10 MiB and 100 pages. `cover_letter` is optional (max 10,000 characters).
 
+The separately supplied candidate name and email address are also used to pseudonymize extracted CV text before any live AI analysis. The local service masks their variants together with other contact details and personal entities. If this step fails, processing stops before any AI-provider call and a recruiter may retry it after remediation. The original private PDF is never sent to the provider by this pipeline.
+
 HTTP 202 returns `application_reference`, `status: accepted`, and `duplicate: false`. The pair `source + external_reference` is idempotent within an offer; a duplicate returns HTTP 200 without creating another application. Screening does not decide on its own: an apparently out-of-scope application becomes **Rejection to confirm** with a factual explanation. A recruiter confirms rejection or continues deeper analysis. Confirmation immediately queues the response; the card then shows pending, sending, sent, or needs-attention mail status.
 
 A campaign remains **Closing** while analysis, human confirmations or retries are outstanding. The top 10 is built only after every application has stabilized. Scoring compares professional evidence against announced criteria and never performs final selection.

@@ -118,8 +118,9 @@ Le service source envoie un formulaire multipart avec `source`, `external_refere
 
 Le mode `demo` est actif par défaut : il est local, gratuit, déterministe et ne transmet aucun CV. Le mode `live` s’active avec `NO_EXCUSE_AI_MODE=live` et la clé du fournisseur concerné.
 
-> [!WARNING]
-> **TODO avant toute utilisation réelle du mode `live` :** le texte extrait des CV n'est pas encore pseudonymisé avant son envoi à un fournisseur IA distant. Il peut donc contenir le nom, le prénom, l'adresse e-mail, le téléphone, l'adresse postale ou d'autres données permettant d'identifier le candidat. Une couche locale et testée de détection/masquage des données personnelles, avec blocage de l'appel distant en cas d'échec, doit être ajoutée avant une mise en production avec de véritables candidatures. Configurer le fournisseur pour ne pas conserver les requêtes ne remplace pas cette protection.
+Avant chaque appel en mode `live`, le texte extrait passe obligatoirement par le microservice local `cv-pseudonymizer`. Il masque d'abord l'identité connue de la candidature, puis les coordonnées, URLs personnelles, adresses, dates de naissance et entités personne/localisation détectées par Presidio et spaCy. Les critères professionnels de l'offre sont protégés des faux positifs du NER. Le service ne conserve rien, ne journalise pas les documents et n'a aucun accès réseau sortant à l'exécution. Une indisponibilité ou une réponse invalide bloque l'appel IA distant.
+
+Cette mesure est une pseudonymisation et non une anonymisation irréversible : le CV original et une trajectoire professionnelle peuvent toujours permettre d'identifier une personne. Elle réduit les données transmises mais ne dispense ni d'un accord de traitement, ni de l'information des candidats, ni d'un audit sur un corpus représentatif.
 
 Les tokens ne sont jamais saisis dans l’interface RH. Le développeur les place dans `api/.env` pour une installation locale, ou dans le gestionnaire de secrets de l’infrastructure en production (Docker Secrets, Vault ou équivalent). Le fichier `.env` est ignoré par Git. L’écran **Configuration** ne reçoit que deux booléens par fournisseur — utilisable et clé configurée — et n’expose jamais la clé, même masquée. La conservation des requêtes côté fournisseur doit être désactivée lorsqu’elle est disponible (`OPENAI_STORE=false` est imposé dans les profils Docker). Par exemple :
 
@@ -162,8 +163,8 @@ Les tests backend s’exécutent dans un projet Docker isolé avec PostgreSQL, c
 - les CV ne sont servis qu’aux membres de l’entreprise concernée ;
 - les consignes IA excluent les informations sensibles et critères discriminatoires ;
 - le score assiste la décision, mais la sélection finale reste humaine ;
-- la pseudonymisation locale des CV avant appel à un fournisseur IA distant reste un TODO bloquant pour la production ;
-- en mode `live`, le texte du CV quitte l’infrastructure vers les fournisseurs choisis : un accord de traitement des données et une politique de rétention restent indispensables avant production.
+- en mode `live`, seul le texte pseudonymisé est envoyé au fournisseur choisi et l'appel échoue de façon fermée si le service local est indisponible ;
+- malgré cette réduction des données, un accord de traitement et une politique de rétention restent indispensables avant production.
 
 Voir aussi [SECURITY.md](SECURITY.md) et [CONTRIBUTING.md](CONTRIBUTING.md).
 

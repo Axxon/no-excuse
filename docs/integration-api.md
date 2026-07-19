@@ -33,6 +33,8 @@ Champs :
 | `cv` | oui | PDF non chiffré uniquement (`application/pdf`), 10 Mio et 100 pages max. |
 | `cover_letter` | non | texte, 10 000 caractères max. |
 
+Le nom et l'adresse e-mail transmis séparément servent aussi à pseudonymiser le texte extrait du CV avant toute analyse IA en mode `live`. Le service local masque leurs variantes ainsi que d'autres coordonnées et entités personnelles. Si cette étape échoue, la candidature passe en échec de traitement et aucun appel au fournisseur IA n'est effectué ; elle peut ensuite être relancée par un RH après correction. Le PDF original reste privé et n'est jamais transmis au fournisseur par ce pipeline.
+
 Réponse initiale, HTTP 202 :
 
 ```json

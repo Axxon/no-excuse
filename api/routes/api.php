@@ -34,6 +34,7 @@ Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function (): void {
     Route::put('/auth/mfa', [AuthController::class, 'configureMfa']);
     Route::get('/organization', [OrganizationController::class, 'show']);
     Route::put('/organization', [OrganizationController::class, 'update']);
+    Route::post('/organization/mail-test', [OrganizationController::class, 'sendTestMail'])->middleware('throttle:3,10');
     Route::get('/organization/members', [OrganizationController::class, 'members']);
     Route::post('/organization/members', [OrganizationController::class, 'storeMember']);
     Route::post('/organization/members/{member:public_id}/resend-invitation', [OrganizationController::class, 'resendMemberInvitation']);

@@ -4,11 +4,11 @@ namespace App\Contracts;
 
 use App\Data\ScoringResult;
 use App\Data\ScreeningResult;
-use App\Models\JobOffer;
+use App\Models\Application;
 
 interface CandidateAnalyzer
 {
-    public function screen(JobOffer $offer, string $cvText): ScreeningResult;
+    public function screen(Application $application, string $cvText): ScreeningResult;
 
-    public function score(JobOffer $offer, string $cvText): ScoringResult;
+    public function score(Application $application, string $cvText): ScoringResult;
 }

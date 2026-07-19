@@ -25,11 +25,18 @@ x-api: &api
     REDIS_CLIENT: predis
     REDIS_HOST: redis
     MAIL_MAILER: log
+    CV_PSEUDONYMIZER_URL: http://cv-pseudonymizer:8080
+    CV_PSEUDONYMIZER_TIMEOUT_SECONDS: 15
   depends_on:
     postgres:
       condition: service_healthy
     redis:
       condition: service_healthy
+    cv-pseudonymizer:
+      condition: service_healthy
+  networks:
+    - default
+    - pseudonymization
 
 services:
   api:
@@ -69,6 +76,26 @@ services:
     ports:
       - "5173:5173"
 
+  cv-pseudonymizer:
+    build:
+      context: ./pseudonymizer
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - pseudonymization
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
+
   postgres:
     image: postgres:18.4-alpine
     environment:
@@ -102,3 +129,7 @@ volumes:
   postgres-data:
   redis-data:
   web-node-modules:
+
+networks:
+  pseudonymization:
+    internal: true

@@ -13,6 +13,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class RetentionMailAndWaitlistTest extends TestCase
@@ -150,5 +151,50 @@ class RetentionMailAndWaitlistTest extends TestCase
         Mail::fake();
         $this->artisan('mail:test', ['email' => 'admin@example.test'])->assertSuccessful();
         Mail::assertSent(MailConfigurationTest::class, 1);
+    }
+
+    public function test_owner_can_send_a_configuration_test_only_to_their_own_account(): void
+    {
+        Mail::fake();
+        $owner = User::factory()->create(['email' => 'owner@example.test']);
+        $owner->organization->update([
+            'notification_sender_name' => 'Équipe RH Acme',
+            'notification_reply_to' => 'rh@example.test',
+        ]);
+        Sanctum::actingAs($owner);
+
+        $this->postJson('/api/organization/mail-test')
+            ->assertOk()
+            ->assertJsonPath('message', 'E-mail de test envoyé à votre adresse.');
+
+        Mail::assertSent(MailConfigurationTest::class, function (MailConfigurationTest $mail): bool {
+            $envelope = $mail->envelope();
+
+            return $mail->hasTo('owner@example.test')
+                && $envelope->from?->name === 'Équipe RH Acme'
+                && ($envelope->replyTo[0]->address ?? null) === 'rh@example.test';
+        });
+    }
+
+    public function test_mail_configuration_test_is_private_and_disabled_for_demo_sandboxes(): void
+    {
+        Mail::fake();
+        $this->postJson('/api/organization/mail-test')->assertUnauthorized();
+
+        $owner = User::factory()->create();
+        $recruiter = $owner->organization->users()->create([
+            'name' => 'Recruteur',
+            'email' => 'recruiter@example.test',
+            'password' => 'Strong-password-2026',
+            'role' => 'recruiter',
+        ]);
+        Sanctum::actingAs($recruiter);
+        $this->postJson('/api/organization/mail-test')->assertForbidden();
+
+        $owner->organization->update(['is_demo' => true]);
+        Sanctum::actingAs($owner);
+        $this->postJson('/api/organization/mail-test')->assertForbidden();
+
+        Mail::assertNothingSent();
     }
 }

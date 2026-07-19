@@ -6,6 +6,7 @@ import { useAuthStore } from '../stores/auth'
 
 const { t } = useI18n(); const auth = useAuthStore(); const organization = ref<Organization | null>(null); const members = ref<TeamMember[]>([]); const providers = ref<AiMeta['providers']>([]); const aiMode = ref('demo')
 const saved = ref(false); const error = ref(''); const inviteOpen = ref(false)
+const mailTestSending = ref(false); const mailTestSent = ref(false)
 const demoReadOnly = computed(() => Boolean(auth.user?.organization?.is_demo))
 const settingsReadOnly = computed(() => demoReadOnly.value || !['owner', 'admin'].includes(auth.user?.role ?? ''))
 const member = reactive({ name: '', email: '', role: 'recruiter' })
@@ -22,6 +23,12 @@ async function save(): Promise<void> {
   if (!organization.value) return
   try { const response = await apiRequest<{ data: Organization }>('/organization', { method: 'PUT', body: JSON.stringify(organization.value) }, auth.token); organization.value = response.data; saved.value = true; window.setTimeout(() => saved.value = false, 2500) }
   catch (caught) { error.value = caught instanceof Error ? caught.message : t('common.error') }
+}
+async function sendTestMail(): Promise<void> {
+  error.value = ''; mailTestSent.value = false; mailTestSending.value = true
+  try { await apiRequest('/organization/mail-test', { method: 'POST' }, auth.token); mailTestSent.value = true }
+  catch (caught) { error.value = caught instanceof Error ? caught.message : t('common.error') }
+  finally { mailTestSending.value = false }
 }
 async function addMember(): Promise<void> {
   try { await apiRequest('/organization/members', { method: 'POST', body: JSON.stringify(member) }, auth.token); inviteOpen.value = false; Object.assign(member, { name: '', email: '', role: 'recruiter' }); await load() }
@@ -51,6 +58,7 @@ async function toggleMfa(): Promise<void> {
       <fieldset class="settings-fields" :disabled="settingsReadOnly">
       <label>{{ t('setup.company') }}<input v-model="organization.name" required /></label>
       <div class="form-grid"><label>{{ t('settings.sender') }}<input v-model="organization.notification_sender_name" required /></label><label>{{ t('settings.replyTo') }}<input v-model="organization.notification_reply_to" type="email" required /></label></div>
+      <div v-if="!demoReadOnly" class="provider-security"><strong>{{ t('settings.mailTest') }}</strong><p>{{ t('settings.mailTestLead', { email: auth.user?.email }) }}</p><button class="button button-small button-ghost" type="button" :disabled="mailTestSending" @click="sendTestMail">{{ mailTestSending ? t('settings.mailTestSending') : t('settings.mailTestAction') }}</button><small v-if="mailTestSent" class="success-line">{{ t('settings.mailTestSent') }}</small></div>
       <div class="form-grid"><label>{{ t('settings.filterProvider') }}<select v-model="organization.default_screening_provider"><option v-for="provider in providers" :key="provider.key" :value="provider.key">{{ provider.label }}</option></select></label><label>{{ t('settings.scoreProvider') }}<select v-model="organization.default_scoring_provider"><option v-for="provider in providers" :key="provider.key" :value="provider.key">{{ provider.label }}</option></select></label></div>
       <div class="provider-security"><strong>{{ aiMode === 'demo' ? t('settings.demoMode') : t('settings.liveMode') }}</strong><p>{{ t('settings.secretHelp') }}</p><div class="provider-statuses"><span v-for="provider in providers" :key="provider.key" :class="{ missing: aiMode === 'live' && !provider.credential_configured }"><i aria-hidden="true" />{{ provider.label }} · {{ provider.credential_configured ? t('settings.configured') : t('settings.missing') }}</span></div></div>
       <div class="velocity-card"><div><strong>{{ t('settings.velocity') }}</strong><small>{{ t('settings.velocityLead') }}</small></div><label>{{ t('settings.filterWorkers') }}<input v-model.number="organization.screening_workers" type="number" min="1" max="10" /></label><label>{{ t('settings.scoreWorkers') }}<input v-model.number="organization.scoring_workers" type="number" min="1" max="10" /></label></div>

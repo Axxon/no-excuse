@@ -170,12 +170,12 @@ class RecruitmentFlowTest extends TestCase
         Storage::disk('local')->put($application->cv_path, app(DemoCvPdf::class)->render($this->candidateData(), 0));
         $this->app->bind(CandidateAnalyzer::class, fn () => new class implements CandidateAnalyzer
         {
-            public function screen(JobOffer $offer, string $cvText): ScreeningResult
+            public function screen(Application $application, string $cvText): ScreeningResult
             {
                 return new ScreeningResult(true, 82.5, 'Compétences principales présentes.');
             }
 
-            public function score(JobOffer $offer, string $cvText): ScoringResult
+            public function score(Application $application, string $cvText): ScoringResult
             {
                 return new ScoringResult(88.4, ['adéquation' => 90.0, 'expérience' => 84.0], 'Profil solide et pertinent.');
             }
@@ -203,12 +203,12 @@ class RecruitmentFlowTest extends TestCase
         {
             public function __construct(private readonly string $reason) {}
 
-            public function screen(JobOffer $offer, string $cvText): ScreeningResult
+            public function screen(Application $application, string $cvText): ScreeningResult
             {
                 return new ScreeningResult(false, 24.0, $this->reason);
             }
 
-            public function score(JobOffer $offer, string $cvText): ScoringResult
+            public function score(Application $application, string $cvText): ScoringResult
             {
                 throw new \LogicException('Une candidature hors périmètre ne doit pas être scorée.');
             }

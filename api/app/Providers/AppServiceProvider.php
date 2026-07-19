@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Contracts\CandidateAnalyzer;
+use App\Contracts\CvPseudonymizer;
 use App\Services\DemoCandidateAnalyzer;
+use App\Services\HttpCvPseudonymizer;
 use App\Services\LaravelAiCandidateAnalyzer;
 use Illuminate\Support\ServiceProvider;
 
@@ -14,8 +16,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bind(CvPseudonymizer::class, HttpCvPseudonymizer::class);
         $this->app->bind(CandidateAnalyzer::class, fn () => config('no-excuse.ai.mode') === 'live'
-            ? new LaravelAiCandidateAnalyzer
+            ? $this->app->make(LaravelAiCandidateAnalyzer::class)
             : new DemoCandidateAnalyzer);
     }
 

@@ -62,6 +62,10 @@ return [
             'openai-compatible' => ['screening' => env('COMPATIBLE_SCREENING_MODEL', 'qwen3:4b'), 'scoring' => env('COMPATIBLE_SCORING_MODEL', 'qwen3:14b')],
         ],
     ],
+    'pseudonymization' => [
+        'url' => env('CV_PSEUDONYMIZER_URL', 'http://cv-pseudonymizer:8080'),
+        'timeout_seconds' => (int) env('CV_PSEUDONYMIZER_TIMEOUT_SECONDS', 15),
+    ],
     'scope_threshold' => (float) env('NO_EXCUSE_SCOPE_THRESHOLD', 25),
     'prompts' => [
         'screening' => 'Évalue uniquement si le CV correspond au périmètre professionnel explicite de l’annonce. Ignore le nom, l’âge, le genre, l’origine, la photographie, l’adresse et toute autre donnée sensible. Un profil doit être conservé dès lors que ses compétences transférables rendent une analyse approfondie raisonnable. Le motif doit être factuel, bienveillant, concis et directement partageable avec le candidat ; il cite uniquement les écarts professionnels observables entre le CV et l’annonce.',
