@@ -54,6 +54,7 @@ Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function (): void {
     Route::put('/applications/{application}/feedback', [ApplicationController::class, 'feedback']);
     Route::post('/applications/{application}/screening-decision', [ApplicationController::class, 'screeningDecision']);
     Route::post('/applications/{application}/retry', [ApplicationController::class, 'retry']);
+    Route::post('/applications/{application}/notification-send', [ApplicationController::class, 'sendNotification']);
     Route::post('/applications/{application}/notification-retry', [ApplicationController::class, 'retryNotification']);
     Route::post('/applications/{application}/select', [ApplicationController::class, 'select']);
 });

@@ -45,7 +45,7 @@ class ApplicationResource extends JsonResource
         ];
     }
 
-    private function notificationStatus(): ?string
+    private function notificationStatus(): string
     {
         if ($this->notification_state === 'failed' || $this->notification_state === 'attention_required') {
             return 'failed';
@@ -54,7 +54,7 @@ class ApplicationResource extends JsonResource
             return 'sending';
         }
         if (! in_array($this->status, ['rejected_out_of_scope', 'rejected_final', 'selected'], true)) {
-            return null;
+            return 'not_ready';
         }
         if (! $this->notified_at) {
             return 'pending';
