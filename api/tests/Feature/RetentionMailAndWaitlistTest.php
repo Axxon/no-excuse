@@ -95,6 +95,53 @@ class RetentionMailAndWaitlistTest extends TestCase
             ->assertJsonFragment(['uuid' => $application->public_id, 'notification_status' => 'sent']);
     }
 
+    public function test_recruiter_can_manually_dispatch_a_pending_candidate_response(): void
+    {
+        $user = User::factory()->create();
+        $offer = $user->jobOffers()->create([
+            'title' => 'Développeur Laravel', 'company' => 'Acme', 'description' => 'Poste test', 'criteria' => ['PHP'],
+            'rejection_message' => 'Merci pour votre candidature.', 'final_rejection_message' => 'Non retenu',
+            'ingestion_key_hash' => hash('sha256', 'key'), 'status' => 'open',
+        ]);
+        $application = $offer->applications()->create([
+            'candidate_name' => 'Test Candidate', 'candidate_email' => 'candidate@example.test',
+            'cv_path' => 'cvs/test/rejected.pdf', 'cv_original_name' => 'cv.pdf', 'status' => 'rejected_out_of_scope',
+            'notification_state' => 'pending', 'status_token_hash' => hash('sha256', 'token'),
+        ]);
+        $token = $user->createToken('manual-notification')->plainTextToken;
+
+        $this->withToken($token)->postJson('/api/applications/'.$application->public_id.'/notification-send')
+            ->assertOk()
+            ->assertJsonPath('data.notification_status', 'pending');
+
+        Queue::assertPushed(SendCandidateDecision::class, fn (SendCandidateDecision $job): bool => $job->applicationId === $application->id && $job->queue === 'notifications');
+        $this->assertDatabaseHas('application_events', [
+            'application_id' => $application->id,
+            'type' => 'candidate_notification_manually_queued',
+            'user_id' => $user->id,
+        ]);
+    }
+
+    public function test_candidate_without_a_decision_has_an_explicit_mail_status(): void
+    {
+        $user = User::factory()->create();
+        $offer = $user->jobOffers()->create([
+            'title' => 'Développeur Laravel', 'company' => 'Acme', 'description' => 'Poste test', 'criteria' => ['PHP'],
+            'rejection_message' => 'Merci pour votre candidature.', 'final_rejection_message' => 'Non retenu',
+            'ingestion_key_hash' => hash('sha256', 'key'), 'status' => 'open',
+        ]);
+        $application = $offer->applications()->create([
+            'candidate_name' => 'Test Candidate', 'candidate_email' => 'candidate@example.test',
+            'cv_path' => 'cvs/test/candidate.pdf', 'cv_original_name' => 'cv.pdf', 'status' => 'scored',
+            'status_token_hash' => hash('sha256', 'token'),
+        ]);
+        $token = $user->createToken('mail-status')->plainTextToken;
+
+        $this->withToken($token)->getJson('/api/offers/'.$offer->public_id.'/applications')
+            ->assertOk()
+            ->assertJsonFragment(['uuid' => $application->public_id, 'notification_status' => 'not_ready']);
+    }
+
     public function test_final_decision_email_contains_the_personalized_candidate_message(): void
     {
         Mail::fake();

@@ -187,6 +187,26 @@ class ApplicationController extends Controller
         return new ApplicationResource($application->fresh()->load(['annotations.user', 'offer.organization']));
     }
 
+    public function sendNotification(Request $request, Application $application): ApplicationResource
+    {
+        $this->authorizeApplication($request, $application);
+        $this->authorizeCanWrite($request);
+        DB::transaction(function () use ($application, $request): void {
+            $locked = Application::query()->lockForUpdate()->findOrFail($application->id);
+            abort_unless(
+                in_array($locked->status, ['rejected_out_of_scope', 'rejected_final', 'selected'], true)
+                    && $locked->notification_state === 'pending'
+                    && ! $locked->notified_at,
+                409,
+                'Cet e-mail n’est pas en attente d’envoi.'
+            );
+            $locked->events()->create(['type' => 'candidate_notification_manually_queued', 'user_id' => $request->user()->id, 'metadata' => ['status' => $locked->status]]);
+        });
+        SendCandidateDecision::dispatch($application->id)->onQueue('notifications');
+
+        return new ApplicationResource($application->fresh()->load(['annotations.user', 'offer.organization']));
+    }
+
     public function reorder(Request $request, JobOffer $offer): AnonymousResourceCollection
     {
         $this->authorizeOffer($request, $offer);
