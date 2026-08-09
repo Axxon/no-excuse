@@ -2,8 +2,6 @@
 
 [English](README.en.md) · Français
 
-**Démo publique : [tester no-excuse sur no-excuse.pro](https://no-excuse.pro/) — 20 CV fictifs, aucun compte requis.**
-
 ```mermaid
 sequenceDiagram
     actor C as Candidat
