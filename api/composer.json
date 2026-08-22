@@ -8,7 +8,7 @@
     "require": {
         "php": "^8.5",
         "dompdf/dompdf": "^3.1.5",
-        "laravel/ai": "^0.9.1",
+        "laravel/ai": "^0.11.0",
         "laravel/framework": "^13.8",
         "laravel/sanctum": "^4.3",
         "laravel/tinker": "^3.0",
